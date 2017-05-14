@@ -291,7 +291,7 @@
         success : function (msg)
         {
           console.log( "Assigning user messages success! ("+user_id+")" );
-          //location.reload();
+          location.reload();
         }
       });
   }
@@ -308,6 +308,7 @@
         success : function (msg)
         {
           console.log( "State update loop success!");
+          location.reload();
         }
       });
   }
@@ -486,14 +487,19 @@
                         <th>Text</th>
                         <th>Source</th>
                         <th>Scope</th>
-                        <th>Sent</th>
+                        <th>Sent time</th>
+                        <th>Rmd1 time</th>
+                        <th>Followup time</th>
+                        <th>Rmd2 time</th>
+                        <th>Dial end time</th>
                         <th>Data</th>
                         <th>Chart</th>
                         <th>No.resp</th>
+                        <th>No.followup resp</th>
                         <th>Simulate</th>
                     </tr>
         <?php
-                while (strtotime($act_date) < strtotime("-1 days", strtotime($date_end))) {
+                while (strtotime($act_date) < strtotime("0 days", strtotime($date_end))) {
                     $act_date = date('Y-m-d', strtotime($d." days", strtotime($date_start)));
                     logDebug("Act date:".$act_date);
 
@@ -525,6 +531,12 @@
                     logDebug("Edate:". $edate);
                     logDebug("Sdate:". $sdate);
 
+                    #responses to msg
+                    $responses = getUserResponsesToMsg($userID, $log_entry[0]['id']);
+
+                    #responses to followup
+                    $responses_follow = getUserResponsesToFollowup($userID, $log_entry[0]['id']);
+
                     echo "<tr>";
                     echo "<td style='background-color:#dddddd'>".$d."</td>";
                     echo "<td style='background-color:#dddddd'>".$log_entry[0]['id']."</td>";
@@ -534,11 +546,16 @@
                     echo "<td>".$message_entry['text']."</td>";
                     echo "<td>".$message_entry['source']."</td>";
                     echo "<td>".$message_entry['scope']."</td>";
-                    echo "<td style='background-color:rgb(".round(((1-$log_entry[0]['sent'])*200)).",200,".round(((1-$log_entry[0]['sent'])*200)).")'>".$log_entry[0]['sent']."</td>";
+                    echo "<td>".$log_entry[0]['msg_sent_time']."</td>";
+                    echo "<td>".$log_entry[0]['rmd1_sent_time']."</td>";
+                    echo "<td>".$log_entry[0]['followup_sent_time']."</td>";
+                    echo "<td>".$log_entry[0]['rmd2_sent_time']."</td>";
+                    echo "<td>".$log_entry[0]['dialogue_complete_sent_time']."</td>";
                     echo "<td>".$log_entry[0]['chart_data']."</td>";
                     echo "<td>".$log_entry[0]['chart_img']."</td>";
-                    echo "<td>"."?"."</td>";
-                    echo "<td>". ($log_entry[0]['sent'] == 0 ? '<button type="button" onclick="return sendMessageToUser('.$message_entry['id'].', \''.$sdate.'\', \''.$edate.'\');">Send</button>' : "?")."</td>";
+                    echo "<td>".count($responses)."</td>";
+                    echo "<td>".count($responses_follow)."</td>";
+                    echo "<td>". ($log_entry[0]['msg_sent_time'] == 0 ? '<button type="button" onclick="return sendMessageToUser('.$message_entry['id'].', \''.$sdate.'\', \''.$edate.'\');">Send</button>' : "?")."</td>";
                     echo "</tr>";
                 
                     $d++;
@@ -742,12 +759,16 @@
             echo "<table border=1>";
             echo "<tr>";
             echo "<th>Date</th>";
+            echo "<th>Log id</th>";
             echo "<th>Body</th>";
+            echo "<th>Intent</th>";
             echo "</tr>";//->getIterator(0,50,array("To" => $user['number']))
             foreach ($responses as $rsp_no => $rsp_values) {
                 echo "<tr>";
                 echo "<td>".date("D, d M Y H:i:s",strtotime($rsp_values['local_date']))."</td>";
+                echo "<td>".$rsp_values['log_id']."</td>";
                 echo "<td>".$rsp_values['text']."</td>";
+                echo "<td>".$rsp_values['intent']."</td>";
                 echo "</tr>";
             }
             echo "<table>";

@@ -36,16 +36,20 @@ $confirmations = [
 
 $first_reminders = [
 	["text" => "Hey <name>, did you have a chance to think about the last question?"],
-	["text" => "Hey <name>, haven’t heard from you. What do you think about the last question?"],
+	["text" => "Hey <name>, I haven’t heard from you. What do you think about the last question?"],
 	["text" => "Hey <name>, what do you think about the last question?"],
 	["text" => "Hey <name>, I am curious about your thoughts regarding the last question."]
 ];
 
 $second_reminders = [
 	["text" => "Hey <name>, did you have a chance to think about the last question?"],
-	["text" => "Hey <name>, haven’t heard from you. What do you think about the last question?"],
+	["text" => "Hey <name>, I haven’t heard from you. What do you think about the last question?"],
 	["text" => "Hey <name>, what do you think about the last question?"],
 	["text" => "Hey <name>, I am curious about your thoughts regarding the last question."]
+];
+
+$dialoge_end_thank_you = [
+	["text" => "<name>, thank you so much for sharing your reflections with us."]
 ];
 
 
@@ -91,7 +95,10 @@ function getFirstReminder($user_name) {
 	srand(make_seed());
 	$rmd_no = rand(0,count($first_reminders)-1);
 
-	return $first_reminders[$rmd_no];
+	$rmd_raw_text = $first_reminders[$rmd_no]['text'];
+	$final_text = replaceEntities($rmd_raw_text, ["<name>" => $user_name]);
+
+	return $final_text;
 }
 
 function getSecondReminder($user_name) {
@@ -100,7 +107,10 @@ function getSecondReminder($user_name) {
 	srand(make_seed());
 	$rmd_no = rand(0,count($second_reminders)-1);
 
-	return $second_reminders[$rmd_no];
+	$rmd_raw_text = $second_reminders[$rmd_no]['text'];
+	$final_text = replaceEntities($rmd_raw_text, ["<name>" => $user_name]);
+
+	return $final_text;
 }
 
 function getReplyConfirmationMessage($user_name, $original_msg) {
@@ -109,6 +119,18 @@ function getReplyConfirmationMessage($user_name, $original_msg) {
 	$msg = $user_name.", thanks for your feedback! You sent us: ".$original_msg;
 
 	return ["text" => $msg];
+}
+
+function getDialogueEndThankYou($user_name) {
+	global $dialoge_end_thank_you;
+
+	srand(make_seed());
+	$dety_no = rand(0,count($dialoge_end_thank_you)-1);
+
+	$raw_text = $dialoge_end_thank_you[$dety_no]['text'];
+	$final_text = replaceEntities($raw_text, ["<name>" => $user_name]);
+
+	return $final_text;
 }
 
 

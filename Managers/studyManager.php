@@ -66,8 +66,8 @@ function getMessageLogsSent($user_id) {
 	global $conn;
 
 	logDebug("Getting appropriate log id for response time ...");
-	$sql = "SELECT * FROM RS_study_log WHERE `user_id`=\"$user_id\" AND `sent`=\"1\" ORDER BY `local_date` ASC";
-	logDebug("getLogIDForResponseDate - selecting: " . $sql);
+	$sql = "SELECT * FROM RS_study_log WHERE `user_id`=\"$user_id\" AND `msg_sent_time`>=\"2015-01-01\" ORDER BY `local_date` ASC";
+	logDebug("getMessageLogsSent - selecting: " . $sql);
 
 	$result = executeSimpleSelectQuery($sql);
 	
@@ -91,7 +91,7 @@ function getUserDayStudyLog($user_id, $local_date = -1, $create = true) {
 	$result = [];
 	while ($entry_id == -1) {
 		$sql = "SELECT * FROM RS_study_log WHERE `user_id`=\"$user_id\" AND `local_date`=\"$local_date\"";
-		logDebug("getUserDayStudyLogID - selecting: " . $sql);
+		//logDebug("getUserDayStudyLogID - selecting: " . $sql);
 
 		$result = executeSimpleSelectQuery($sql);
 		if (count($result)>0) {
@@ -122,7 +122,7 @@ function getUserDayStudyLog($user_id, $local_date = -1, $create = true) {
 	return $result;
 }
 
-function getLogIDForResponseDate($user_id, $local_response_date) {
+/*function getLogIDForResponseDate($user_id, $local_response_date) {
 	global $conn;
 
 	$log_id = NULL;
@@ -136,6 +136,14 @@ function getLogIDForResponseDate($user_id, $local_response_date) {
 	}
 
 	return $log_id;
+}*/
+
+function getUserDayStudyLogByID($user_id, $log_id) {
+	logDebug("Getting day study log by id: ".$log_id);
+	$sql = "SELECT * FROM RS_study_log WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\" ORDER BY `local_date` ASC";
+	logDebug("getUserDayStudyLogByID - selecting: " . $sql);
+
+	return executeSimpleSelectQuery($sql)[0];
 }
 
 function setFutureDayMessageMappingForUser($user_id, $dayMessageMapping) {
@@ -198,17 +206,71 @@ function setFutureDayMessageMappingForUser($user_id, $dayMessageMapping) {
 	} 
 }
 
-function setSentStatusForUserLog($user_id, $log_id, $sent_status) {
+function setMsgSentTimeForUserLog($user_id, $log_id, $sent_time) {
 	global $conn;
 
-	logDebug("Setting the sent status for log: ".$log_id." to ".$sent_status);
-
-	$sql = "UPDATE RS_study_log SET `sent`=\"$sent_status\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
-
-	logDebug("setSentStatusForLog: " . $sql);
+	logDebug("Setting the msg sent status for log: ".$log_id." to ".$sent_time);
+	$sql = "UPDATE RS_study_log SET `msg_sent_time`=\"$sent_time\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setMsgSentTimeForUserLog: " . $sql);
 
 	if ($conn->query($sql) === TRUE) {
-    	logDebug("New record created successfully");
+    	logDebug("Update successful");
+	} else {
+    	logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+function setRmd1SentTimeForUserLog($user_id, $log_id, $sent_time) {
+	global $conn;
+
+	logDebug("Setting the rmd 1 sent status for log: ".$log_id." to ".$sent_time);
+	$sql = "UPDATE RS_study_log SET `rmd1_sent_time`=\"$sent_time\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setRmd1SentTimeForUserLog: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+    	logDebug("Update successful");
+	} else {
+    	logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+function setFollowupSentTimeForUserLog($user_id, $log_id, $sent_time) {
+	global $conn;
+
+	logDebug("Setting the followup sent status for log: ".$log_id." to ".$sent_time);
+	$sql = "UPDATE RS_study_log SET `followup_sent_time`=\"$sent_time\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setMsgSentTimeForUserLog: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+    	logDebug("Update successful");
+	} else {
+    	logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+function setRmd2SentTimeForUserLog($user_id, $log_id, $sent_time) {
+	global $conn;
+
+	logDebug("Setting the rmd 2 sent status for log: ".$log_id." to ".$sent_time);
+	$sql = "UPDATE RS_study_log SET `rmd2_sent_time`=\"$sent_time\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setRmd1SentTimeForUserLog: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+    	logDebug("Update successful");
+	} else {
+    	logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+function setDialogueCompleteSentTimeForUserLog($user_id, $log_id, $sent_time) {
+	global $conn;
+
+	logDebug("Setting the dialogue complete sent status for log: ".$log_id." to ".$sent_status);
+	$sql = "UPDATE RS_study_log SET `dialogue_complete_sent_time`=\"$sent_time\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setDialogueCompleteSentTimeForUserLog: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+    	logDebug("Update successful");
 	} else {
     	logError("Error: " . $sql . "<br>", $conn->error);
 	}
@@ -287,7 +349,7 @@ function getUserActivityChart($user_id, $source, $scope, $start_date, $end_date,
 	logDebug("Data string to send:". $data_str);
 
 	//construct URL
-	$url = "http://motivators.hcde.uw.edu:8000/render?";
+	$url = "http://motivators.hcde.uw.edu/render?";
 	$url .= "source=".strtolower($source);
 	$url .= "&time=".strtolower($scope);
 	$url .= "&data=".$data_str;
@@ -303,7 +365,7 @@ function getUserActivityChart($user_id, $source, $scope, $start_date, $end_date,
 	$result = file_get_contents($url);
 	logDebug("Response:".$result);
 
-	$chart_img_url = "http://motivators.hcde.uw.edu:8000/".$filename;
+	$chart_img_url = "http://motivators.hcde.uw.edu/".$filename;
 
 	if (strcasecmp($target,"Mobile") == 0) {
 		return $chart_img_url;
@@ -604,9 +666,9 @@ if ($action != NULL && $action == "assignMessagesToUser") {
 	logDebug("Trying to send a reflective message to user:".$user_id.",msg_id:".$msg_id.",start_date:".$start_date.",end_date:".$end_date);
 
 	if ($target) {
-		echo sendMessagetoUser($user_id, $msg_id, $start_date, $end_date, $target);
+		echo sendTestMessagetoUser($user_id, $msg_id, $start_date, $end_date, $target);
 	} else {
-		echo sendMessagetoUser($user_id, $msg_id, $start_date, $end_date);
+		echo sendTestMessagetoUser($user_id, $msg_id, $start_date, $end_date);
 	}
 
 	logDebug("After mesage sent!");
