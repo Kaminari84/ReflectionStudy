@@ -23,6 +23,7 @@ include_once("Managers/fitbit_dataManager.php");
 include_once("Managers/fitbit_profileManager.php");
 include_once("Managers/fitbit_deviceManager.php");
 include_once("Managers/studyManager.php");
+include_once("Managers/luisManager.php");
 
 // Check if normal loop or response from Twilio
 $sms_from = isset($_REQUEST['From']) ? $_REQUEST['From'] : NULL;
@@ -44,6 +45,10 @@ $STUDY_END_MSG =" This is the end of the Reflection Study. We will send you a su
 
 #when the new day starts
 $DAY_END_TIME_H = 23; $DAY_END_TIME_M = 00;
+
+#reminder delays
+$RMD1_DELAY_M = 4;
+$RMD2_DELAY_M = 4;
 
 function transitionState($actState, $time, $stopMessage) {
 	global $DAY_END_TIME;
@@ -77,8 +82,9 @@ function transitionState($actState, $time, $stopMessage) {
 	return $status;
 }
 
-function transitionMState($actMState, $time) {
-	global $STUDY_START_MSG, $STUDY_START_MSG_2, $DAY_END_TIME, $DAY_MSG_TIME;
+function transitionMState($actMState, $time, $user_id) {
+	global $STUDY_START_MSG, $STUDY_START_MSG_2, $DAY_END_TIME, $DAY_MSG_TIME,
+		   $RMD1_DELAY_M, $RMD2_DELAY_M;
 
 	logDebug("Transition MState function ...");
 
@@ -105,7 +111,187 @@ function transitionMState($actMState, $time) {
 			logDebug("Checking transitions for state: DAY_MSG_SENT");
 			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
 
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+
+            $msgID = $log_entry[0]['msg_id'];
+            $dateSent = $log_entry[0]['msg_sent_time'];
+            $rmd1Sent = $log_entry[0]['rmd1_sent_time'];
+            logDebug("MSG ID:".$msgID.", MsgSent:". $dateSent.", rmd1Sent:".$rmd1Sent);
+
+			#get the response
+			$msg_responses = getUserResponsesToMsg($user_id, $log_entry[0]['id']);
+			logDebug("Number of responses in DAY_MSG_SENT:".count($msg_responses));
+
+			#is there a response?
+			if(count($msg_responses) > 0) {
+				#test if there is a follow-up by matching anything
+				if ( count(getTestFollowUpForMessageID($msgID,"")) > 0 ) {
+					#is the response recognized?
+					$intent = $msg_responses[0]['intent'];
+					logDebug("Intent of the first response:".$intent);
+
+					// unrecognized followup, end the dialogue
+					if (strcasecmp($intent, "None") == 0) {
+						logDebug("Unrecognized intent, ending dialogue...");
+
+						#change the state
+						$status["stateChanged"] = 1;
+						$status["nextState"] = "DIALOGUE_COMPLETE";
+						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					} else {
+						#recognized intent, but still can be "Any" or specific
+						logDebug("Reconized intent, changing state to sent followup...");
+						#change the state
+						$status["stateChanged"] = 1;
+						$status["nextState"] = "FOLLOWUP_SENT";
+						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					}
+				# There is not follow up to this message, directly go to the dialogue end state
+				} else {
+					#recognized intent, but still can be "Any" or specific
+					logDebug("No followup, ending the dialogue here...");
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "DIALOGUE_COMPLETE";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+				}
+			#check the timeout
+			} else {
+				logDebug("No responses so far, let's check the timeout for reminder 1");
+
+				$user_timezone = getUserTimezone($user_id);
+				date_default_timezone_set($user_timezone);
+
+				$rmd_timeout = strtotime("+".$RMD1_DELAY_M." minutes", strtotime($dateSent) );
+				logDebug("Comparing dates to check if we need to send reminder, current:".date("M-d-Y H:i:s", $time).", timeout:".date("M-d-Y H:i:s",$rmd_timeout));
+				if ($time > $rmd_timeout && $rmd1Sent == 0) {
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "RMD1_SENT";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+				}
+
+			}
+			break;
+		case "RMD1_SENT":
+			logDebug("Checking transitions for state: RMD1_SENT");
+			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
+
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+			$msgID = $log_entry[0]['msg_id'];
+          
+            #get the response
+			$msg_responses = getUserResponsesToMsg($user_id, $log_entry[0]['id']);
+			logDebug("Number of responses in DAY_MSG_SENT:".count($msg_responses));
+
+			#is there a response?
+			if(count($msg_responses) > 0) {
+				#test if there is a follow-up by matching anything
+				if ( count(getTestFollowUpForMessageID($msgID,"")) > 0 ) {
+					#is the response recognized?
+					$intent = $msg_responses[0]['intent'];
+					logDebug("Intent of the first response:".$intent);
+
+					// unrecognized response, end the dialogue
+					if (strcasecmp($intent, "None") == 0) {
+						logDebug("Unrecognized intent, ending dialogue...");
+
+						#change the state
+						$status["stateChanged"] = 1;
+						$status["nextState"] = "DIALOGUE_COMPLETE";
+						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					} else {
+						#recognized intent, but still can be "Any" or specific
+						logDebug("Reconized intent, changing state to sent followup...");
+						#change the state
+						$status["stateChanged"] = 1;
+						$status["nextState"] = "FOLLOWUP_SENT";
+						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					}
+				# There is not follow up to this message, directly go to the dialogue end state
+				} else {
+					#recognized intent, but still can be "Any" or specific
+					logDebug("No followup, ending the dialogue here...");
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "DIALOGUE_COMPLETE";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+				}
+			} elseif ($time >= $DAY_END_TIME) {
+				logDebug("Day ended timeout in RMD1_SENT");
+				$status["stateChanged"] = 1;
+				$status["nextState"] = "DAY_START";
+				logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+			}
+			break;
+		case "FOLLOWUP_SENT":
+			logDebug("Checking transitions for state: FOLLOWUP_SENT");
+			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
+
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+
+            $msgID = $log_entry[0]['msg_id'];
+            $dateSent = $log_entry[0]['followup_sent_time'];
+            $rmd2Sent = $log_entry[0]['rmd2_sent_time'];
+            logDebug("MSG ID:".$msgID.", FollowupSent:". $dateSent.", rmd2Sent:".$rmd2Sent);
+
+			#get the response
+			$followup_responses = getUserResponsesToFollowup($user_id, $log_entry[0]['id']);
+			logDebug("Number of responses in FOLLOWUP_SENT:".count($followup_responses));
+			#is there a response?
+			if(count($followup_responses) > 0) {
+				#change the state
+				$status["stateChanged"] = 1;
+				$status["nextState"] = "DIALOGUE_COMPLETE";
+				logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+			#check the timeout
+			} else {
+				logDebug("No responses so far, let's check the timeout for reminder 2");
+
+				$user_timezone = getUserTimezone($user_id);
+				date_default_timezone_set($user_timezone);
+
+				$rmd_timeout = strtotime("+".$RMD2_DELAY_M." minutes", strtotime($dateSent) );
+				logDebug("Comparing dates to check if we need to send reminder, current:".date("M-d-Y H:i:s", $time).", timeout:".date("M-d-Y H:i:s",$rmd_timeout));
+				if ($time > $rmd_timeout && $rmd2Sent == 0) {
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "RMD2_SENT";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+				}
+
+			}
+
+			break;
+		case "RMD2_SENT":
+			logDebug("Checking transitions for state: RMD2_SENT");
+			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
+
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+          
+            #get the response
+			$msg_responses = getUserResponsesToFollowup($user_id, $log_entry[0]['id']);
+			logDebug("Number of responses in RMD2_SENT:".count($msg_responses));
+
+			#is there a response?
+			if(count($msg_responses) > 0) {
+				#change the state
+				$status["stateChanged"] = 1;
+				$status["nextState"] = "DIALOGUE_COMPLETE";
+				logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+			} elseif ($time >= $DAY_END_TIME) {
+				logDebug("Day ended timeout in RMD1_SENT");
+				$status["stateChanged"] = 1;
+				$status["nextState"] = "DAY_START";
+				logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+			}
+			break;
+		case "DIALOGUE_COMPLETE":
+			logDebug("Checking transitions for state: DIALOGUE_COMPLETE");
+			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
+
 			if ($time >= $DAY_END_TIME) {
+				logDebug("Day ended timeout in RMD1_SENT");
 				$status["stateChanged"] = 1;
 				$status["nextState"] = "DAY_START";
 				logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
@@ -150,15 +336,6 @@ function enterState($state, $user_id, $number, $email) {
 			#sendEmail($email, "Fitness Challenges Study - UW", $STUDY_START_MSG);
 			$user_timezone = getUserTimezone($user_id);
 
-			//Want to start with a full day
-			if ($user_timezone !== null) {
-	    		logDebug("Setting user timezone: ".$user_timezone);
-	    		date_default_timezone_set($user_timezone);
-
-				logDebug("USER time:".date("M-d-Y H:i:s", $now));
-	    	} else {
-				date_default_timezone_set('America/Los_Angeles');
-			}
 			break;
 		case "END_STUDY":
 			logDebug("In END_STUDY");
@@ -167,7 +344,7 @@ function enterState($state, $user_id, $number, $email) {
 	}
 }
 
-function enterMState($mstate, $user_id, $number, $email, $name) {
+function enterMState($mstate, $user_id, $time) {
 	global $STUDY_START_MSG, $STUDY_START_MSG_2, $STUDY_END_MSG;
 
 	logDebug("Enter MState function ...");
@@ -175,24 +352,23 @@ function enterMState($mstate, $user_id, $number, $email, $name) {
 
 	switch ($mstate) {
 		case "DAY_START":
-			logDebug("In DAY_START");
+			logDebug("entering DAY_START");
 			//Is there a need to generate new message mappings?
 			//logDebug("Day message assignment status:".getDayStudyMappingForUser($user_id, "m1"));
 			
 			break;
 		case "DAY_MSG_SENT":
-			logDebug("In DAY_MSG_SENT");
+			logDebug("Entering DAY_MSG_SENT");
 			$log_entry = getUserDayStudyLog($user_id, -1, false);
 
             $msgID = $log_entry[0]['msg_id'];
-            $isSent = $log_entry[0]['sent'];
-            logDebug("MSG ID:".$msgID.", isSent:", $isSent);
+            $dateSent = $log_entry[0]['msg_sent_time'];
+            logDebug("MSG ID:".$msgID.", dateSent:", $dateSent);
             
             //Sending only if this message has not been sent yet
-            if ($isSent == 0) {
+            if ($dateSent == 0) {
             	logDebug("Not sent yet, decided to send now!");
-            	//Set status for already sent
-            	setSentStatusForUserLog($user_id, $log_entry[0]['id'], 1);
+            
             	//Get ID for the message
 	            $message_entry = getMessageForID($msgID);
 
@@ -202,19 +378,110 @@ function enterMState($mstate, $user_id, $number, $email, $name) {
 	            }
 
 	            date_default_timezone_set(getUserTimezone($user_id));
-				$edate = date('Y-m-d', time());
+				$edate = date('Y-m-d', $time);
 	            $sdate = date('Y-m-d', strtotime("-".$d." days", strtotime($edate)));
 	            logDebug("Start date:" . $sdate . ", End date:" . $edate);
+
+	            //Set status for already sent
+            	setMsgSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
 	            
 	            logDebug("Trying to send messsage to user ".$user_id.", msg_id:".$message_entry['id']);
-	            sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
-
-				#$msg_text = (($cond==0) ? $DAY_MSG[0][$mn] : getMessageForID($mn)['message']);
-
-				#$message = "Hey ".$name.", ".$msg_text." ".$DAY_MSG_EXERCISE[$ex];
-				#sendEmail($email, date("l")." challenge 1!", $message);
-				#sendSMS($number, $message);
+	            #sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
+	            sendTestMessageToUser($user_id, $message_entry['id'], $sdate, $edate);
 	        }
+			break;
+		case "RMD1_SENT":
+			logDebug("Entering RMD1_SENT");
+			
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+			$user_name = getUserName($user_id);
+			$number = getUserMobileNumber($user_id);
+
+			#time to send the reminder
+			$rmd_text = getFirstReminder($user_name);
+			sendSMS($number, $rmd_text);
+
+			#set the time when reminder was sent and indicate it has already been sent by that
+			date_default_timezone_set(getUserTimezone($user_id));
+			setRmd1SentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
+
+			break;
+		case "FOLLOWUP_SENT":
+			logDebug("Entering FOLLOWUP_SENT");
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+
+            $msgID = $log_entry[0]['msg_id'];
+            $dateSent = $log_entry[0]['followup_sent_time'];
+            logDebug("MSG ID:".$msgID.", dateSent:", $dateSent);
+            
+            //Sending only if this message has not been sent yet
+            if ($dateSent == 0) {
+            	logDebug("Not sent yet, decided to send now!");
+            
+            	//Get ID for the message
+	            $message_entry = getMessageForID($msgID);
+          
+            	#get the response
+				$msg_responses = getUserResponsesToMsg($user_id, $log_entry[0]['id']);
+				logDebug("Number of responses in state FOLLOWUP_SENT:".count($msg_responses));
+
+				#is there a response?
+				if(count($msg_responses) > 0) {
+				
+					#is the response recognized?
+					$intent = $msg_responses[0]['intent'];
+					$text = $msg_responses[0]['text'];
+					logDebug("Intent of the first response:".$intent);
+
+					// unrecognized response, end the dialogue
+					if (strcasecmp($intent, "None") == 0) {
+						logDebug("ERROR:We should never be here! - FOLLOWUP_SENT and no intent");
+					} else {
+						//Set status for already sent
+						date_default_timezone_set(getUserTimezone($user_id));
+            			setFollowupSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
+						
+						logDebug("Trying to send followup to user ".$user_id.", msg_id:".$message_entry['id']);
+	            		#sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
+	            		sendTestFollowUpMessageToUser($user_id, $message_entry['id'], $intent, $text);
+
+					}
+				} else {
+					logDebug("ERROR:We should never be here! - FOLLOWUP_SENT and no responses");
+				}
+			}
+
+			break;
+		case "RMD2_SENT":
+			logDebug("Entering RMD2_SENT");
+
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+			$user_name = getUserName($user_id);
+			$number = getUserMobileNumber($user_id);
+
+			#time to send the reminder
+			$rmd_text = getSecondReminder($user_name);
+			sendSMS($number, $rmd_text);
+
+			#set the time when reminder was sent and indicate it has already been sent by that
+			date_default_timezone_set(getUserTimezone($user_id));
+			setRmd2SentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
+			break;
+		case "DIALOGUE_COMPLETE":
+			logDebug("Entering DIALOGUE_COMPLETE");
+
+			$log_entry = getUserDayStudyLog($user_id, -1, false);
+			$user_name = getUserName($user_id);
+			$number = getUserMobileNumber($user_id);
+
+			#time to send thank you for providing all the information
+			$thank_you_text = getDialogueEndThankYou($user_name);
+			sendSMS($number, $thank_you_text);
+
+			#set the time when thank you was etn
+			date_default_timezone_set(getUserTimezone($user_id));
+			setDialogueCompleteSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
+
 			break;
 	}
 }
@@ -326,8 +593,9 @@ function processSMSMessages($state, $mstate) {
 	logDebug("Processing SMS messages <".$state.">,<".$mstate.">...");
 
 	switch ($mstate) {
-		case "DAY_MSG_SENT":
 		case "DAY_START":
+		case "DIALOGUE_COMPLETE":
+			logDebug("In DAY_START!");
 			$user_entry = getUserByMobileNumber($sms_from);
 			if(count($user_entry)>0) {
 				$contents = $_REQUEST['Body'];
@@ -348,6 +616,59 @@ function processSMSMessages($state, $mstate) {
 			}
 
 			break;
+		case "RMD1_SENT":
+		case "DAY_MSG_SENT":
+			logDebug("In DAY_MSG_SENT or RMD1_SENT!");
+			$user_entry = getUserByMobileNumber($sms_from);
+			if(count($user_entry)>0) {
+				$user_id = $user_entry[0]['id'];
+				$contents = $_REQUEST['Body'];
+				logDebug("Contents: ".$contents.", ". $user_id);
+
+				//get the log of cureent message
+				$log_entry = getUserDayStudyLog($user_id, -1, false);
+				$msg_id = $log_entry[0]['msg_id'];
+				$msg_entry = getTestMessageforID($msg_id);
+				logDebug("Message entry for log:".print_r($msg_entry, TRUE));
+
+				#check if this message requires luis smarts
+				$msg_intent = "Any";
+				if (array_key_exists("luis_url", $msg_entry)) {
+					logDebug("Has luis!");	
+
+					$msg_luis_url = $msg_entry['luis_url'];
+					$intent_entry = getIntent($msg_luis_url, $contents, $return_type="Array");
+					$msg_intent = $intent_entry['intent'];
+					logDebug("Luis intent: ".print_r($intent_entry,TRUE));
+				}
+
+				//Add to the messages
+				addUserResponse($user_id, $contents, $msg_intent);
+			}
+			break;
+		case "RMD2_SENT":
+		case "FOLLOWUP_SENT":
+			logDebug("In FOLLOWUP_SENT or RMD2_SENT!");
+			$user_entry = getUserByMobileNumber($sms_from);
+			if(count($user_entry)>0) {
+				$user_id = $user_entry[0]['id'];
+				$contents = $_REQUEST['Body'];
+				logDebug("Contents: ".$contents.", ". $user_id);
+
+				//get the log of cureent message
+				$log_entry = getUserDayStudyLog($user_id, -1, false);
+				$msg_id = $log_entry[0]['msg_id'];
+				$msg_entry = getTestMessageforID($msg_id);
+				logDebug("Message entry for log:".print_r($msg_entry, TRUE));
+
+				#we are not evaluation the intet in these messages
+				$msg_intent = "";
+
+				//Add to the messages
+				addUserResponse($user_id, $contents, $msg_intent);
+			}
+			break;
+
 	}
 }
 
@@ -433,7 +754,7 @@ foreach ($users as $n => $user) {
 					"nextState" => $user["m_state"] ];
 
 	if ($status["nextState"] == "IN_STUDY") {
-		$m_status = transitionMState($user["m_state"],$now);
+		$m_status = transitionMState($user["m_state"],$now, $user_id);
 		if ($m_status["stateChanged"] == 1) {
 			setUserMState($user_id, $m_status["nextState"]);
 		}
@@ -454,7 +775,7 @@ foreach ($users as $n => $user) {
 		enterState($status["nextState"], $user_id, $user["number"], $user["e_mail"]);
 	}
 	if ($m_status["stateChanged"] == 1) {
-		enterMState($m_status["nextState"], $user_id, $user["number"], $user["e_mail"], $user["name"]);
+		enterMState($m_status["nextState"], $user_id, $now);
 	}
 
 	//state loop functions
