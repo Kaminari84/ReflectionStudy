@@ -34,15 +34,23 @@ if ($msg_no == NULL) {
 	$msg_no = rand(0,count($messages)-1);
 }
 
-$msg_id = $msg_no;//$messages[$msg_no]['id'];
+$msg_id = $messages[$msg_no]['id'];
 
 $filename = "img_".$user_id."_".$msg_id."_".date('Y_m_d_H_i_s').".png";
 
 #determine the days
+#$d=7;
+#if (strcasecmp($messages[$msg_no]['scope'], "2weeks") == 0) {
+#	$d=14;
+#}
+//Get ID for the message
+$message_entry = getMessageForID($msg_id);
+
 $d=7;
-if (strcasecmp($messages[$msg_no]['scope'], "2weeks") == 0) {
+if (strcasecmp($message_entry['scope'], "2weeks") == 0) {
 	$d=14;
 }
+
 
 date_default_timezone_set(getUserTimezone($user_id));
 $edate = date('Y-m-d', time());
