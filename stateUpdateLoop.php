@@ -92,15 +92,12 @@ function transitionMState($actMState, $time, $user_id) {
 				"prevState" => $actMState, 
 				"nextState" => $actMState];
 
-	$user_timezone = getUserTimezone($user_id);
-	date_default_timezone_set($user_timezone);
 	logDebug("Time offset: " . date("M-d-Y H:i:s", $time));
 	logDebug("Current M state: <".$actMState.">");
 
 	switch ($actMState) {
 		case "DAY_START":
 			logDebug("Checking transitions for state: DAY_START");
-			date_default_timezone_set('America/Los_Angeles');
 			logDebug("DAY_MSG_TIME:".date("M-d-Y H:i:s", $DAY_MSG_TIME));
 			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
 	
@@ -161,9 +158,6 @@ function transitionMState($actMState, $time, $user_id) {
 			#check the timeout
 			} else {
 				logDebug("No responses so far, let's check the timeout for reminder 1");
-
-				$user_timezone = getUserTimezone($user_id);
-				date_default_timezone_set($user_timezone);
 
 				$rmd_timeout = strtotime("+".$RMD1_DELAY_M." minutes", strtotime($dateSent) );
 				logDebug("Comparing dates to check if we need to send reminder, current:".date("M-d-Y H:i:s", $time).", timeout:".date("M-d-Y H:i:s",$rmd_timeout));
@@ -250,9 +244,6 @@ function transitionMState($actMState, $time, $user_id) {
 			#check the timeout
 			} else {
 				logDebug("No responses so far, let's check the timeout for reminder 2");
-
-				$user_timezone = getUserTimezone($user_id);
-				date_default_timezone_set($user_timezone);
 
 				$rmd_timeout = strtotime("+".$RMD2_DELAY_M." minutes", strtotime($dateSent) );
 				logDebug("Comparing dates to check if we need to send reminder, current:".date("M-d-Y H:i:s", $time).", timeout:".date("M-d-Y H:i:s",$rmd_timeout));
@@ -380,7 +371,7 @@ function enterMState($mstate, $user_id, $time) {
 	            	$d=14;
 	            }
 
-	            date_default_timezone_set(getUserTimezone($user_id));
+	            //date_default_timezone_set(getUserTimezone($user_id));
 				$edate = date('Y-m-d', $time);
 	            $sdate = date('Y-m-d', strtotime("-".$d." days", strtotime($edate)));
 	            logDebug("Start date:" . $sdate . ", End date:" . $edate);
@@ -406,7 +397,6 @@ function enterMState($mstate, $user_id, $time) {
 			sendSMS($number, $rmd_text);
 
 			#set the time when reminder was sent and indicate it has already been sent by that
-			date_default_timezone_set(getUserTimezone($user_id));
 			setRmd1SentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
 
 			break;
@@ -442,7 +432,6 @@ function enterMState($mstate, $user_id, $time) {
 						logDebug("ERROR:We should never be here! - FOLLOWUP_SENT and no intent");
 					} else {
 						//Set status for already sent
-						date_default_timezone_set(getUserTimezone($user_id));
             			setFollowupSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
 						
 						logDebug("Trying to send followup to user ".$user_id.", msg_id:".$message_entry['id']);
@@ -468,7 +457,6 @@ function enterMState($mstate, $user_id, $time) {
 			sendSMS($number, $rmd_text);
 
 			#set the time when reminder was sent and indicate it has already been sent by that
-			date_default_timezone_set(getUserTimezone($user_id));
 			setRmd2SentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
 			break;
 		case "DIALOGUE_COMPLETE":
@@ -483,7 +471,6 @@ function enterMState($mstate, $user_id, $time) {
 			sendSMS($number, $thank_you_text);
 
 			#set the time when thank you was etn
-			date_default_timezone_set(getUserTimezone($user_id));
 			setDialogueCompleteSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
 
 			break;
@@ -719,7 +706,7 @@ foreach ($users as $n => $user) {
 	$user_timezone = $user["timezone"];
 
 	//Indicate we are updating this user now
-	date_default_timezone_set('America/Los_Angeles');
+	#date_default_timezone_set('America/Los_Angeles');
 	setLastUpdate($user_id, date("Y-m-d H:i:s", time()));
 
 	if ($user_timezone !== null) {

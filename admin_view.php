@@ -14,6 +14,7 @@
     include_once("Managers/userManager.php");
     include_once("Managers/fitbit_profileManager.php");
     include_once("Managers/fitbit_dataManager.php");
+    include_once("Managers/fitbit_goalManager.php");
     include_once("Managers/fitbit_deviceManager.php");
     include_once("Managers/fitbit_exchangeLogger.php");
     include_once("Managers/messageManager.php");
@@ -284,9 +285,27 @@
         }
       });
 
-    document.location = "admin_view.php?user="+user_id+"&action=show_fitbit_data";
+        document.location = "admin_view.php?user="+user_id+"&action=show_fitbit_data";
   }
 
+  function callAPIFitbitGoals() {
+    user_id = $('input[name=user]:checked', '#userForm').val();
+
+    var request = $.ajax({
+        url: "Managers/fitbit_goalManager.php",
+        type: "GET",
+        data: {action: "callFitbitAPIForGoal", user_id: user_id, source: "all"},
+        dataType: "html",
+        async: true, 
+        success : function (msg)
+        {
+          console.log( "Called Fitbit API to get goals for ("+user_id+")!" );
+          //location.reload();
+        }
+      });
+
+        document.location = "admin_view.php?user="+user_id+"&action=show_user_goals";
+  }
 
   function assignMessages() {
     user_id = $('input[name=user]:checked', '#userForm').val()
@@ -787,6 +806,30 @@
                     <button type="button" onclick="return addUserGoal();">Add goal for user</button>
                 </div>
                 <br />
+                <br />
+                <b>Fitbit goals</b>
+                <br />
+                <button type="button" onclick="return callAPIFitbitGoals();">Request fitbit goals</button>
+                <br />
+                <!-- Fitbit goals for user -->
+                <table id="fitbit-data" border='1' style='font-size:80%'>
+                    <tr>
+                        <th>ID</th>
+                        <th>source</th>
+                        <th>json</th>
+                    </tr>
+
+        <?php
+                $fitbit_goals = getFitbitGoalForUser($userID);
+                foreach ($fitbit_goals as $row_nr => $values) {
+                    echo "<tr>";
+                    echo "<td>".$values['id']."</th>";
+                    echo "<td>".$values['source']."</th>";
+                    echo "<td>".$values['json']."</th>";
+                    echo "</tr>";
+                }
+        ?>
+                </table>
                 <br />
         <?php
             } else {

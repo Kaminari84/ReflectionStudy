@@ -42,7 +42,7 @@ function getFitbitProfile($fitbit_profile_id) {
 
 function getFitbitID($fitbit_profile_id) {
 	$sql = "SELECT fitbit_id FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
-	logDebug("Getting fitbit id for fitbit profile id ". $fibit_profile_id." ...");
+	logDebug("Getting fitbit id for fitbit profile id ". $fitbit_profile_id." ...");
 	
 	$result = executeSimpleSelectQuery($sql)[0];
 	$fitbit_id = $result['fitbit_id'];
@@ -87,7 +87,7 @@ function setAccessTokens($fitbit_profile_id, $access_token, $refresh_token) {
 
 function getAccessTokens($fitbit_profile_id) {
 	$sql = "SELECT access_token, refresh_token FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
-	logDebug("Getting access tokens for fitbit profile ". $fitbit_id." ...");
+	logDebug("Getting access tokens for fitbit profile ". $fitbit_profile_id." ...");
 
 	$result = executeSimpleSelectQuery($sql)[0];
 
