@@ -10,32 +10,26 @@ function addFitbitProfile($fitbit_id, $fitbit_secret) {
 	global $conn;
 
 	logDebug("Attempting to add fitbit profile: ".$fitbit_id);
-	//Check if fitbit profile already exists
-	$result = getFitbitProfile($fitbit_id);
-	if (count($result) == 0) {
-		logDebug("Fitbit profile does not exist yet, adding...");
+	$sql = "INSERT INTO RS_fitbit_user_profile (
+		fitbit_id,
+		consumer_secret) VALUES 
+			(\"$fitbit_id\",
+			\"$fitbit_secret\")";
 
-		$sql = "INSERT INTO RS_fitbit_user_profile (
-			fitbit_id,
-			consumer_secret) VALUES 
-				(\"$fitbit_id\",
-				\"$fitbit_secret\")";
+	logDebug("Running save SQL: " . $sql);
 
-		logDebug("Running save SQL: " . $sql);
-
-		if ($conn->query($sql) === TRUE) {
-		    logDebug("New record created successfully");
-		} else {
-		    logError("Error: " . $sql . "<br>", $conn->error);
-		}
+	if ($conn->query($sql) === TRUE) {
+	    logDebug("New record created successfully");
 	} else {
-		logDebug("Fitbit profile already exists, skipping...");
+	    logError("Error: " . $sql . "<br>", $conn->error);
 	}
+
+	return $conn->insert_id;
 }
 
-function getFitbitProfile($fitbit_id) {
-	$sql = "SELECT * FROM RS_fitbit_user_profile WHERE `fitbit_id`=\"$fitbit_id\"";
-	logDebug("Getting fitbit profile for fitbit id ". $fitbit_id." ...");
+function getFitbitProfile($fitbit_profile_id) {
+	$sql = "SELECT * FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
+	logDebug("Getting fitbit profile for id ". $fitbit_profile_id." ...");
 	
 	$response = [];
 	$result = executeSimpleSelectQuery($sql);
@@ -46,19 +40,19 @@ function getFitbitProfile($fitbit_id) {
 	return $response;
 }
 
-/*function getFitbitProfileID($user_id) {
-	$sql = "SELECT fitbit_id FROM RS_fitbit_user_profile WHERE `user_id`=\"$user_id\"";
-	logDebug("Getting fitbit id for user ". $user_id." ...");
+function getFitbitID($fitbit_profile_id) {
+	$sql = "SELECT fitbit_id FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
+	logDebug("Getting fitbit id for fitbit profile id ". $fibit_profile_id." ...");
 	
 	$result = executeSimpleSelectQuery($sql)[0];
 	$fitbit_id = $result['fitbit_id'];
 
 	return $fitbit_id;
-}*/
+}
 
-function getFitbitSecret($fitbit_id) {
-	$sql = "SELECT consumer_secret FROM RS_fitbit_user_profile WHERE `fitbit_id`=\"$fitbit_id\"";
-	logDebug("Getting fitbit secret for profile ". $fitbit_id." ...");
+function getFitbitSecret($fitbit_profile_id) {
+	$sql = "SELECT consumer_secret FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
+	logDebug("Getting fitbit secret for profile id ". $fitbit_profile_id." ...");
 
 	$result = executeSimpleSelectQuery($sql)[0];
 	$consumer_secret = $result['consumer_secret'];
@@ -76,29 +70,11 @@ function getFitbitSecret($fitbit_id) {
 	return $user_id;
 }*/
 
-/*function getLastCallTime($user_id) {
-	$sql = "SELECT last_call_time FROM RS_fitbit_user_profile WHERE `user_id`=\"$user_id\"";
-	logDebug("Getting access tokens for user id ". $user_id." ...");
-
-	$result = executeSimpleSelectQuery($sql)[0];
-
-	return $result['last_call_time'];
-}
-
-function getNextCallTime($user_id) {
-	$sql = "SELECT next_call_time FROM RS_fitbit_user_profile WHERE `user_id`=\"$user_id\"";
-	logDebug("Getting access tokens for user id ". $user_id." ...");
-
-	$result = executeSimpleSelectQuery($sql)[0];
-
-	return $result['next_call_time'];
-}*/
-
-function setAccessTokens($fitbit_id, $access_token, $refresh_token) {
+function setAccessTokens($fitbit_profile_id, $access_token, $refresh_token) {
 	global $conn;
 
-	logDebug("Setting access tokens for fitbit profile: ".$fitbit_id."...");
-	$sql = "UPDATE RS_fitbit_user_profile SET `access_token`=\"$access_token\", `refresh_token`=\"$refresh_token\"  WHERE `fitbit_id`=\"$fitbit_id\"";
+	logDebug("Setting access tokens for fitbit profile id: ".$fitbit_profile_id."...");
+	$sql = "UPDATE RS_fitbit_user_profile SET `access_token`=\"$access_token\", `refresh_token`=\"$refresh_token\"  WHERE `id`=\"$fitbit_profile_id\"";
 
 	logDebug("Running update SQL: " . $sql);
 
@@ -109,38 +85,8 @@ function setAccessTokens($fitbit_id, $access_token, $refresh_token) {
 	}
 }
 
-/*function setLastCallTime($user_id, $lastCallTime) {
-	global $conn;
-
-	logDebug("Setting last call time for user ".$user_id."...");
-	$sql = "UPDATE RS_fitbit_user_profile SET `last_call_time`=\"$lastCallTime\" WHERE `user_id`=\"$user_id\"";
-
-	logDebug("Running update SQL: " . $sql);
-
-	if ($conn->query($sql) === TRUE) {
-	    logDebug("Record updated successfully");
-	} else {
-	    logError("Error: " . $sql . "<br>", $conn->error);
-	}
-}
-
-function setNextCallTime($user_id, $nextCallTime) {
-	global $conn;
-
-	logDebug("Setting next call time for user ".$user_id."...");
-	$sql = "UPDATE RS_fitbit_user_profile SET `next_call_time`=\"$nextCallTime\" WHERE `user_id`=\"$user_id\"";
-
-	logDebug("Running update SQL: " . $sql);
-
-	if ($conn->query($sql) === TRUE) {
-	    logDebug("Record updated successfully");
-	} else {
-	    logError("Error: " . $sql . "<br>", $conn->error);
-	}
-}*/
-
-function getAccessTokens($fitbit_id) {
-	$sql = "SELECT access_token, refresh_token FROM RS_fitbit_user_profile WHERE `fitbit_id`=\"$fitbit_id\"";
+function getAccessTokens($fitbit_profile_id) {
+	$sql = "SELECT access_token, refresh_token FROM RS_fitbit_user_profile WHERE `id`=\"$fitbit_profile_id\"";
 	logDebug("Getting access tokens for fitbit profile ". $fitbit_id." ...");
 
 	$result = executeSimpleSelectQuery($sql)[0];
@@ -148,18 +94,19 @@ function getAccessTokens($fitbit_id) {
 	return $result;
 }
 
-function clearAccessTokens($fitbit_id) {
-	setAccessTokens($fitbit_id, NULL, NULL);
+function clearAccessTokens($fitbit_profile_id) {
+	setAccessTokens($fitbit_profile_id, NULL, NULL);
 }
 
-function refreshAccessToken($fitbit_id, $user_id) {
+function refreshAccessToken($fitbit_profile_id, $user_id) {
 	logDebug("Attempting to refresh an expired access token...");
-	$tokens = getAccessTokens($fitbit_id);
-	$fitbit_secret = getFitbitSecret($fitbit_id);
+	$tokens = getAccessTokens($fitbit_profile_id);
+	$fitbit_id = getFitbitID($fitbit_profile_id);
+	$fitbit_secret = getFitbitSecret($fitbit_profile_id);
 
 	$refresh_token = $tokens['refresh_token'];
 
-	logDebug("Refresh token for fitbit profile: ".$fitbit_id." -> ".$refresh_token);
+	logDebug("Refresh token for fitbit profile: ".$fitbit_profile_id." -> ".$refresh_token);
 
 	$url = 'https://api.fitbit.com/oauth2/token';
 	$data = array(	
@@ -214,7 +161,7 @@ function refreshAccessToken($fitbit_id, $user_id) {
 			if (array_key_exists("access_token", $assoc)) {
 				logDebug("Access token:". $assoc['access_token']);
 				logDebug("Refresh token:". $assoc['refresh_token']);
-				setAccessTokens($fitbit_id, $assoc['access_token'], $assoc['refresh_token']);
+				setAccessTokens($fitbit_profile_id, $assoc['access_token'], $assoc['refresh_token']);
 			}
 		}
 	}
@@ -253,7 +200,9 @@ if ($action != NULL && $action == "addFitbitProfile") {
 	$fitbit_secret = isset($_GET['fitbit_secret']) ? $_GET['fitbit_secret'] : NULL;
 
 	logDebug("Adding fitbit profile ".$fitbit_id."...");
-	addFitbitProfile($fitbit_id, $fitbit_secret);
+	$fitbit_profile_id = addFitbitProfile($fitbit_id, $fitbit_secret);
+
+	echo $fitbit_profile_id;
 } 
 /*elseif ($action != NULL && $action == "setFitbitTokens") {
 	logDebug("Setting Fitbit Tokens - FITBIT PROFILE MANAGER");

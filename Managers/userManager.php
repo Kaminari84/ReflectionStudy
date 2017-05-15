@@ -6,7 +6,7 @@ logDebug("----USER MANAGER LOAD----");
 logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
 
-function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $max_time, $fitbit_id) {
+function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $max_time, $fitbit_profile_id) {
 	global $conn;
 
 	date_default_timezone_set('America/Los_Angeles');
@@ -32,21 +32,21 @@ function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $m
 		local_end_date,
 		min_msg_time,
 		max_msg_time,
-		fitbit_id) VALUES 
+		fitbit_profile_id) VALUES 
 			(\"$uuid\",
 			\"$user_number\",
 			\"$user_email\",
 			\"$timezone\", 
 			\"$user_name\", 
 			\"ENROLLED\",
-			\"DAY_MSG_SENT\",
+			\"DIALOGUE_COMPLETE\",
 			\"$today_date\", 
 			\"\",
 			\"$local_today_date\",
 			\"\",
 			\"$min_time\",
 			\"$max_time\",
-			\"$fitbit_id\")";
+			\"$fitbit_profile_id\")";
 
 	logDebug("Running save SQL: " . $sql);
 
@@ -137,12 +137,58 @@ function setFitbitNextCallTime($user_id, $date) {
 }
 
 ### GETTERS ###
-function getUserGoal($user_id) {
-	$goals = [	"making sure that I am conscious of being active", 
-				"keeping up with progress on running",
-				"loosing weight",
-				"geting more active and increasing your stamina",
-				"loosing weight and toning your body",
+
+### HANDLING USER GOALS ###
+function getAllUserGoals($user_id) {
+	logDebug("Getting all user goals...");
+	$sql = "SELECT * FROM RS_user_goal WHERE `user_id`=\"$user_id\"";
+
+	$result = executeSimpleSelectQuery($sql);
+
+	return $result;
+}
+
+function getMatchingUserGoal($user_id, $time_scopes) {
+	logDebug("Getting matching user goals for user: ".$user_id.", match:".print_r($time_scopes, TRUE));
+
+	$sql = "SELECT * FROM RS_user_goal WHERE `user_id`=\"$user_id\" AND `source`=\"manual\" AND `time_scope` IN (";
+
+	#add matching time scopes
+	foreach ($time_scopes as $n => $scope) {
+		$sql .= "\"$scope\",";
+	}
+	$sql = rtrim($sql, ",");
+	$sql .= ")";
+
+	$result = executeSimpleSelectQuery($sql);
+	if (count($result) > 0) {
+		srand(make_seed());
+		$goal_no = rand(0,count($result)-1);
+
+		return $result[$goal_no];
+	} else {
+		#revert back to fitbit user goals
+		$sql = str_replace("manual", "fitbit", $sql);
+
+		$result = executeSimpleSelectQuery($sql);
+		if (count($result) > 0) {
+			
+			srand(make_seed());
+			$goal_no = rand(0,count($result)-1);
+
+			return $result[$goal_no];
+		} else {
+			return [];
+		}
+
+	}
+
+	/*$goals = [	
+		[ "text" => "making sure that I am conscious of being active", "goal_scope" => "abstract" ],
+		[ "text" => "keeping up with progress on running", "goal_scope" => "abstract" ],
+		[ "text" => "loosing weight", "goal_scope" => "long_term" ],
+		[ "text" => "geting more active and increasing your stamina", "goal_scope" => "long_term" ],
+		[ "text" => "loosing weight and toning your body", "goal_scope" => "long_term" ],
 				"getting more physically active",
 				"being more active",
 				"getting enough sleep",
@@ -154,14 +200,44 @@ function getUserGoal($user_id) {
 				"maintaining activity level",
 				"being more healthy",
 				"sleeping well"
-			 ];
+			 ];*/
 
-	srand(make_seed());
-	$goal_no = rand(0,count($goals)-1);
 
-	return $goals[$goal_no];
+	#srand(make_seed());
+	#$goal_no = rand(0,count($goals)-1);
+
+	#return $goals[$goal_no];
 }
 
+function addUserGoal($user_id, $source, $text, $area, $time_scope) {
+	global $conn;
+
+	logDebug("Adding new user goal: ".$text.", source:".$source.", area:".$area.", time scope:".$time_scope);
+
+	$sql = "INSERT INTO RS_user_goal (
+		user_id,
+		source,
+		text, 
+		area, 
+		time_scope) VALUES 
+			(\"$user_id\",
+			\"$source\",
+			\"$text\",
+			\"$area\", 
+			\"$time_scope\")";
+
+	logDebug("Running save SQL: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+	    logDebug("New record created successfully");
+	} else {
+	    logError("Error: " . $sql . "<br>", $conn->error);
+	}
+
+	return $conn->insert_id;
+}
+
+#-- HANDLING USER GOALS --#
 
 function getUserTimezone($user_id) {
 	$timezone = 'America/Los_Angeles';
@@ -169,7 +245,6 @@ function getUserTimezone($user_id) {
 	logDebug("Getting user timezone...");
 	$sql = "SELECT timezone FROM RS_user WHERE id=\"$user_id\"";
 
-	logDebug("getUserTimezone: " . $sql);
 	$result = executeSimpleSelectQuery($sql)[0];
 	$timezone = $result["timezone"];
 
@@ -187,15 +262,15 @@ function getUserName($user_id) {
 	return $name;
 }
 
-function getUserFitbitID($user_id) {
+function getUserFitbitProfileID($user_id) {
 	logDebug("Getting user fitbitID...");
-	$sql = "SELECT fitbit_id FROM RS_user WHERE id=\"$user_id\"";
+	$sql = "SELECT fitbit_profile_id FROM RS_user WHERE id=\"$user_id\"";
 
-	logDebug("getUserFitbitID: " . $sql);
+	logDebug("getUserFitbitProfileID: " . $sql);
 	$result = executeSimpleSelectQuery($sql)[0];
-	$fitbit_id = $result["fitbit_id"];
+	$fitbit_profile_id = $result["fitbit_profile_id"];
 
-	return $fitbit_id;
+	return $fitbit_profile_id;
 }
 
 function getFitbitLastCallTime($user_id) {
@@ -355,10 +430,10 @@ if ($action != NULL && $action == "addUser") {
 	$user_timezone = isset($_GET['user_timezone']) ? $_GET['user_timezone'] : NULL;
 	$user_min_time = isset($_GET['user_min_time']) ? $_GET['user_min_time'] : NULL;
 	$user_max_time = isset($_GET['user_max_time']) ? $_GET['user_max_time'] : NULL;
-	$fitbit_id = isset($_GET['fitbit_id']) ? $_GET['fitbit_id'] : NULL;
+	$fitbit_profile_id = isset($_GET['fitbit_profile_id']) ? $_GET['fitbit_profile_id'] : NULL;
 
 	logDebug("Adding user...");
-	$user_id = addUser($user_number, $user_email, $user_name, $user_timezone, $user_min_time, $user_max_time, $fitbit_id);
+	$user_id = addUser($user_number, $user_email, $user_name, $user_timezone, $user_min_time, $user_max_time, $fitbit_profile_id);
 
 	print('{"user_id": "'.$user_id.'"}');
 } elseif ($action != NULL && $action == "startStudyForUser") {
@@ -382,6 +457,17 @@ if ($action != NULL && $action == "addUser") {
 
 	setUserState($user_id, "END_STUDY");
 	logDebug("Study ended!");
+} elseif ($action != NULL && $action == "addUserGoal") {
+	logDebug("Adding user goal...");
+	connectToDB();
+
+	$user_id = isset($_GET['user_id']) ? $_GET['user_id'] : NULL;
+	$text = isset($_GET['text']) ? $_GET['text'] : NULL;
+	$area = isset($_GET['area']) ? $_GET['area'] : NULL;
+	$time_scope = isset($_GET['time_scope']) ? $_GET['time_scope'] : NULL;
+
+	addUserGoal($user_id, "manual", $text, $area, $time_scope);
+	logDebug("Goal ended!");
 }
 
 ?>

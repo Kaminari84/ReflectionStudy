@@ -173,18 +173,21 @@ function fillMessagePattern($raw_msg_params, $user_name, $user_goal) {
 
 	$message = $opening["text"];
 
-	if (strcasecmp($raw_msg_params["subject"], "goal") == 0) {
+	$replacement_array = ["<name>" => $user_name];
+
+	if (strcasecmp($raw_msg_params["subject"], "goal") == 0 && array_key_exists("text", $user_goal)) {
 		#get goal intro
 		$goal_intro = getGoalIntroduction();
-
 		$message .= "  ". $goal_intro["text"];
+
+		$replacement_array["<goal>"] = "\"".$user_goal['text']."\"";
 	}
 
 	$message .= " " . $raw_msg_params["text"];
 	logDebug("Complete message before replacement: ".$message);
 
 	#replae template slots with data
-	$final_text = replaceEntities($message, ["<name>" => $user_name, "<goal>" => "\"".$user_goal."\""]);
+	$final_text = replaceEntities($message, $replacement_array);
 	logDebug("Complete message after replacement: ".$final_text);
 
 	$msg_params = $raw_msg_params;

@@ -111,23 +111,28 @@
         {
             console.log( "Fitbit profile add success! ("+user_fitbit_id+", "+user_fitbit_secret+") -> " + msg );
             //location.reload();
-        }
-    });
 
-    var request2 = $.ajax({
-        url: "Managers/userManager.php",
-        type: "GET",
-        data: {action: "addUser", user_number: user_number, user_name: user_name, user_email: user_email, user_timezone: user_timezone, user_min_time: user_min_time, user_max_time: user_max_time, fitbit_id: user_fitbit_id},
-        dataType: "html",
-        async: true, 
-        success : function (msg)
-        {
-            console.log("User add success! ("+user_number+", "+user_name+") -> " + msg );
+            fitbit_profile_id = msg;
 
-            //var obj = JSON.parse(msg);
-            //console.log("Adding Fitbit prfile for User ID:" + obj.user_id);
+            console.log("Fitbit profile id added:"+fitbit_profile_id);
 
-            //location.reload();
+            var request2 = $.ajax({
+                url: "Managers/userManager.php",
+                type: "GET",
+                data: {action: "addUser", user_number: user_number, user_name: user_name, user_email: user_email, user_timezone: user_timezone, user_min_time: user_min_time, user_max_time: user_max_time, fitbit_profile_id: fitbit_profile_id},
+                dataType: "html",
+                async: true, 
+                success : function (msg)
+                {
+                    console.log("User add success! ("+user_number+", "+user_name+") -> " + msg );
+
+                    //var obj = JSON.parse(msg);
+                    //console.log("Adding Fitbit prfile for User ID:" + obj.user_id);
+
+                    //location.reload();
+                }
+            });
+
         }
     });
   }
@@ -194,6 +199,12 @@
     user_id = $('input[name=user]:checked', '#userForm').val();
 
     document.location = "admin_view.php?user="+user_id+"&action=show_fitbit_exchanges";
+  }
+
+  function showUserGoals() {
+    user_id = $('input[name=user]:checked', '#userForm').val();
+
+    document.location = "admin_view.php?user="+user_id+"&action=show_user_goals";
   }
 
   function sendMessageToUser(msg_id, start_date, end_date) {
@@ -333,6 +344,28 @@
       });
   }
 
+  function addUserGoal() {
+    var user_id = $('input[name=user]:checked', '#userForm').val()
+    var text = $("#goal_text").val();
+    var area = $("#goal_area").val();
+    var time_scope = $("#goal_time_scope").val();
+
+    console.log("Trying to add new goal for user:"+user_id+", text:"+text);
+
+    var request = $.ajax({
+        url: "Managers/userManager.php",
+        type: "GET",
+        data: {action: "addUserGoal", user_id: user_id, text: text, area: area, time_scope: time_scope},
+        dataType: "html",
+        async: true, 
+        success : function (msg)
+        {
+          console.log( "Adding goal for user success! ("+user_id+","+text+")" );
+          //location.reload();
+        }
+      });
+  }
+
 </script>
 
 </head>
@@ -391,7 +424,7 @@
                     </td>
                     <td><?= $user["min_msg_time"] ?></td>
                     <td><?= $user["max_msg_time"] ?></td>
-                    <td><?= getUserFitbitID($user["id"]) ?></td>
+                    <td><?= getUserFitbitProfileID($user["id"]) ?></td>
 
                     <!--Study start date-->
                     <td><?= date('m-d',strtotime(getUserStartDay($user_id))); ?></td>
@@ -412,15 +445,17 @@
         </div>
         <div id="message_allocation" style="background-color:#DDDDDD">
             <b>Message allocation</b><br />
-            <button type="button" onclick="return simulateMessages();">Simulate message assignment</button>
-            <button type="button" onclick="return assignMessages();">Assign messages to user</button>
             <button type="button" onclick="return showAssignedMessages();">Show messages assigned to user</button>
+            <button type="button" onclick="return simulateMessages();">Simulate message assignment</button>
+            <button type="button" onclick="return assignMessages();" style='background-color:#FFDDDD'>Assign messages to user</button>
             <br />
             <b>Fitbit management</b><br />
             <button type="button" onclick="return showFitbitExchanges();">Show fitbit exchanges for user</button>
             <button type="button" onclick="return showFitbitProfile();">Show fitbit profile for the user</button>
             <button type="button" onclick="return showFitbitData();">Show fitbit data for user</button>
             <br />
+            <b>User profile</b><br />
+            <button type="button" onclick="return showUserGoals();">Show user goals</button>
             <br />
         </div>
     </form>
@@ -551,8 +586,8 @@
                     echo "<td>".$log_entry[0]['followup_sent_time']."</td>";
                     echo "<td>".$log_entry[0]['rmd2_sent_time']."</td>";
                     echo "<td>".$log_entry[0]['dialogue_complete_sent_time']."</td>";
-                    echo "<td>".$log_entry[0]['chart_data']."</td>";
-                    echo "<td>".$log_entry[0]['chart_img']."</td>";
+                    echo "<td>".str_replace(",", ", ", $log_entry[0]['chart_data'])."</td>";
+                    echo "<td><a href=\"".$log_entry[0]['chart_img']."\" target=\"_blank\"><img height=\"50\" src=\"".$log_entry[0]['chart_img']."\"/></a></td>";
                     echo "<td>".count($responses)."</td>";
                     echo "<td>".count($responses_follow)."</td>";
                     echo "<td>". ($log_entry[0]['msg_sent_time'] == 0 ? '<button type="button" onclick="return sendMessageToUser('.$message_entry['id'].', \''.$sdate.'\', \''.$edate.'\');">Send</button>' : "?")."</td>";
@@ -618,9 +653,11 @@
         <?php
                 $last_fitbit_call_time = getFitbitLastCallTime($userID);
                 $next_fitbit_call_time = getFitbitNextCallTime($userID);
-                $fitbit_id = getUserFitbitID($userID);
-                $fitbit_profile_entry = getFitbitProfile($fitbit_id);
+                $fitbit_profile_id = getUserFitbitProfileID($userID);
+                $fitbit_id = getFitbitID($fitbit_profile_id);
+                $fitbit_profile_entry = getFitbitProfile($fitbit_profile_id);
                 echo "<table id='fitbit-profile' border='1' style='font-size:80%; border-collapse:collapse; table-layout:fixed; width:800px;'>";
+                echo "<tr><td style='width:100px'>Profile ID</td><td>".$fitbit_profile_entry['id']."</td></tr>";
                 echo "<tr><td style='width:100px'>Fitbit ID</td><td>".$fitbit_profile_entry['fitbit_id']."</td></tr>";
                 echo "<tr><td style='width:100px'>Consumer secret</td><td>".$fitbit_profile_entry['consumer_secret']."</td></tr>";
                 echo "<tr><td style='width:100px'>Access token</td><td style='width:450px; word-wrap:break-word;'>".$fitbit_profile_entry['access_token']."</td></tr>";
@@ -703,9 +740,66 @@
             } else {
                 echo "<div style='color:red; font-weight:bold'>No user selected!</div>";
             }
+        } elseif (strcasecmp($action, "show_user_goals") == 0) {
+            if ($userID) {
+        ?>          
+                <br />
+                <!-- Goals for user -->
+                <table id="fitbit-data" border='1' style='font-size:80%'>
+                    <tr>
+                        <th>ID</th>
+                        <th>source</th>
+                        <th>text</th>
+                        <th>area</th>
+                        <th>time_scope</th>
+                    </tr>
+
+        <?php
+                $user_goals = getAllUserGoals($userID);
+                foreach ($user_goals as $row_nr => $values) {
+                    echo "<tr>";
+                    echo "<td>".$values['id']."</th>";
+                    echo "<td>".$values['source']."</th>";
+                    echo "<td>".$values['text']."</th>";
+                    echo "<td>".$values['area']."</th>";
+                    echo "<td>".$values['time_scope']."</th>";
+                    echo "</tr>";
+                }
+        ?>
+                </table>
+                <br />
+                <div id="add_goal">
+                    Text:  <input id="goal_text" type="text" size="50" name="text"><br />
+                    Goal Area:
+                    <select id="goal_area" name="area">
+                        <option value="PHYSICAL_ACTIVITY">PHYSICAL_ACTIVITY</option>
+                        <option value="WEIGHT">WEIGHT</option>
+                        <option value="NUTRITION">NUTRITION</option>
+                        <option value="SLEEP">SLEEP</option>
+                        <option value="HEALTH">HEALTH</option>
+                    </select><br />
+                    Goal time scope:
+                    <select id="goal_time_scope" name="time_scope">
+                        <option value="DAILY">DAILY</option>
+                        <option value="WEEKLY">WEEKLY</option>
+                        <option value="LONG_TERM">LONG_TERM</option>
+                    </select><br />
+                    <button type="button" onclick="return addUserGoal();">Add goal for user</button>
+                </div>
+                <br />
+                <br />
+        <?php
+            } else {
+                echo "<div style='color:red; font-weight:bold'>No user selected!</div>";
+            }
         }
         ?>
     </div>
+
+
+
+
+    <!-- PERMANENT USER MESSAGE -->
 
     <br /><br />
     <div id="add_participant">
