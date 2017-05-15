@@ -135,7 +135,7 @@ function callFitbitAPIForData($user_id, $source, $scope = "1m") {
 		logFitbitExchange($user_id, "Get Fitbit Data | URL: ".$url.", CONTEXT:".print_r($options, TRUE), $result);
 		$max_repeats = $max_repeats - 1;
 		if ($max_repeats < 0) {
-			logDebug("Reached max repeats, had to stop!");
+			logDebug("ERROR: Reached max repeats, had to stop!");
 			break;
 		}
 

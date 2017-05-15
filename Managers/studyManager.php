@@ -82,9 +82,6 @@ function getUserDayStudyLog($user_id, $local_date = -1, $create = true) {
 		$local_date = date("Y-m-d", time());
 	}
 
-	date_default_timezone_set('America/Los_Angeles');
-	$date = date("Y-m-d", time());
-
 	//Find today's entry
 	$entry_id = -1;
 	$try = 0; 
@@ -299,7 +296,7 @@ function requestFitbitAccessApproval($user_id) {
 	$fitbit_id = getFitbitID($fitbit_profile_id);
 	$mobile_number = getUserMobileNumber($user_id);
 
-	$message = "This is a request for approval of access to fitbit data for Reflection study. Please follow the link to grant approval: http://www.rkocielnik.com/ReflectionStudy/approveAccess.php?user_id=".$user_id;
+	$message = "This is a request for approval of access to fitbit data for Reflection study. Please follow the link to grant approval: https://www.rkocielnik.com/ReflectionStudy/approveAccess.php?user_id=".$user_id;
 
 	sendSMS($mobile_number, $message);
 }

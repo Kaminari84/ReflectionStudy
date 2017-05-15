@@ -49,7 +49,7 @@ if ($code) {
 	$url = 'https://api.fitbit.com/oauth2/token';
 	$data = array(	
 		'client_id' => $fitbit_id, 
-		'redirect_uri' => 'http://www.rkocielnik.com/ReflectionStudy/approveAccess.php',
+		'redirect_uri' => 'https://www.rkocielnik.com/ReflectionStudy/approveAccess.php',
 		'grant_type' => 'authorization_code',
 		'code' => $code);
 
@@ -117,16 +117,16 @@ if ($code) {
 	$url = 'https://www.fitbit.com/oauth2/authorize';
 	$data = array(	
 		'client_id' => $fitbit_id, 
-		'redirect_uri' => 'http://www.rkocielnik.com/ReflectionStudy/approveAccess.php',
+		'redirect_uri' => 'https://www.rkocielnik.com/ReflectionStudy/approveAccess.php',
 		'response_type' => 'code',
-		'scope' => 'profile activity sleep weight heartrate settings');
+		'scope' => 'activity heartrate nutrition profile settings sleep weight');
 
 	$newURL = "https://www.fitbit.com/oauth2/authorize?". http_build_query($data);
 	logDebug($newURL);
 
 	#log exchange
 	logDebug("Logging Fitbit exchange in approveAccess get verification code");
-	logFitbitExchange($user_id, "Request Verification Code | URL: ".$newURL.", DATA:".http_build_query($data), "REDIRECT to: http://www.rkocielnik.com/ReflectionStudy/approveAccess.php");
+	logFitbitExchange($user_id, "Request Verification Code | URL: ".$newURL.", DATA:".http_build_query($data), "REDIRECT to: https://www.rkocielnik.com/ReflectionStudy/approveAccess.php");
 
 	header('Location: '.$newURL);
 }

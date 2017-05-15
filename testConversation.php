@@ -132,6 +132,7 @@ if (array_key_exists("luis_url", $msg_params)) {
 			padding: 4px;
 			margin-top: 5px;
 			margin-bottom: 5px;
+			border-radius: 8px;
 		}
 
 		.user_msg {
@@ -141,6 +142,7 @@ if (array_key_exists("luis_url", $msg_params)) {
 			padding: 4px;
 			margin-top: 5px;
 			margin-bottom: 5px;
+			border-radius: 8px;
 		}
 
 	</style>

@@ -263,7 +263,7 @@ function getUserName($user_id) {
 }
 
 function getUserFitbitProfileID($user_id) {
-	logDebug("Getting user fitbitID...");
+	logDebug("Getting user fitbit profile ID...");
 	$sql = "SELECT fitbit_profile_id FROM RS_user WHERE id=\"$user_id\"";
 
 	logDebug("getUserFitbitProfileID: " . $sql);
