@@ -70,6 +70,8 @@ if (array_key_exists("luis_url", $msg_params)) {
 	$msg_luis_url = $msg_params['luis_url'];
 }
 
+
+
 ?>
 <html>
 <head>

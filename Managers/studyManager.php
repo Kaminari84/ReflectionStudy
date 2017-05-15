@@ -171,7 +171,7 @@ function setFutureDayMessageMappingForUser($user_id, $dayMessageMapping) {
 	logDebug("Local start time str: ".$min_time_str.", num: ".strtotime($min_time));
 	logDebug("Local end time str: ".$max_time_str.", num: ".strtotime($max_time));
 
-	date_default_timezone_set(getUserTimezone($user_id));
+	#date_default_timezone_set(getUserTimezone($user_id));
 	$local_date = date("Y-m-d", time());
 	logDebug("Local date:".$local_date);
 
@@ -276,9 +276,27 @@ function setDialogueCompleteSentTimeForUserLog($user_id, $log_id, $sent_time) {
 	}
 }
 
+function setChartDataForUserLog($user_id, $log_id, $chart_data, $chart_img) {
+	global $conn;
+
+	logDebug("Setting the chart data status for log: ".$log_id." -> data: ".$chart_data.", chart_img". $chart_img);
+	$sql = "UPDATE RS_study_log SET `chart_data`=\"$chart_data\", `chart_img`=\"$chart_img\" WHERE `user_id`=\"$user_id\" AND `id`=\"$log_id\"";
+	logDebug("setChartDataForUserLog: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+    	logDebug("Update successful");
+	} else {
+    	logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+
+### COMMUNICATING WTH USER ####
+
 function requestFitbitAccessApproval($user_id) {
 	logDebug("Sending message to request Fitbit access approaval...");
-	$fitbit_id = getUserFitbitID($user_id);
+	$fitbit_profile_id = getUserFitbitProfileID($user_id);
+	$fitbit_id = getFitbitID($fitbit_profile_id);
 	$mobile_number = getUserMobileNumber($user_id);
 
 	$message = "This is a request for approval of access to fitbit data for Reflection study. Please follow the link to grant approval: http://www.rkocielnik.com/ReflectionStudy/approveAccess.php?user_id=".$user_id;
@@ -367,13 +385,13 @@ function getUserActivityChart($user_id, $source, $scope, $start_date, $end_date,
 
 	$chart_img_url = "http://motivators.hcde.uw.edu/".$filename;
 
+	$arr = ["source" => $source, "scope" => $scope, "data" => $data_str, "image" => $chart_img_url];
+
 	if (strcasecmp($target,"Mobile") == 0) {
-		return $chart_img_url;
+		return $arr;
 	} elseif (strcasecmp($target, "Array") == 0) {
-		$arr = ["source" => $source, "scope" => $scope, "image" => $chart_img_url];
 		return $arr;
 	} elseif (strcasecmp($target, "JSON") == 0) {
-		$arr = ["source" => $source, "scope" => $scope, "image" => $chart_img_url];
 		return json_encode($arr);
 	}
 }
@@ -389,7 +407,12 @@ function sendTestMessageToUser($user_id, $msg_id, $start_date, $end_date, $targe
 	$filename = "img_".$user_id."_".$msg_id."_".date('Y_m_d_H_i_s').".png";
 	$number = getUserMobileNumber($user_id);
 	$user_name = getUserName($user_id);
-	$user_goal = getUserGoal($user_id);
+	
+	$goal_scope = ['daily','weekly','long-term'];
+	if (array_key_exists("goal_scope", $raw_msg_params)) {
+		$goal_scope = $raw_msg_params['goal_scope'];
+	}
+	$user_goal = getMatchingUserGoal($user_id, $goal_scope);
 
 	logDebug("Filename:".$filename);
 	logDebug("Source:".$source);
@@ -398,7 +421,7 @@ function sendTestMessageToUser($user_id, $msg_id, $start_date, $end_date, $targe
 	logDebug("End date:".$end_date);
 	logDebug("User mobile number:".$number);
 	logDebug("User name:".$user_name);
-	logDebug("User goals:".$user_goal);
+	logDebug("Matching user goal:".print_r($user_goal,TRUE));
 	logDebug("Raw message text:".$raw_msg_params['text']);
 
 	#fill message pattern
@@ -416,8 +439,9 @@ function sendTestMessageToUser($user_id, $msg_id, $start_date, $end_date, $targe
 	if (strcmp($source, "none") !=  0) {
 		logDebug("Message with scope, generate chart for data!");
 		#get the activity chart for message
-		$chart_img_url = getUserActivityChart($user_id, $source, $scope, $start_date, $end_date, $filename, "Mobile");
-		$arr['image'] = $chart_img_url;
+		$chart_img_params = getUserActivityChart($user_id, $source, $scope, $start_date, $end_date, $filename, "Mobile");
+		$arr['image'] = $chart_img_params['image'];
+		$arr['data'] = $chart_img_params['data'];
 	} 
 
 	#return in the format desired
@@ -428,12 +452,12 @@ function sendTestMessageToUser($user_id, $msg_id, $start_date, $end_date, $targe
 			//Send the MMS with chart
 			sendMMS($arr['number'], $arr['text'], $arr['image']);
 		}
+		return $arr;
 	} elseif (strcasecmp($target, "Array") == 0) {
 		return $arr;
 	} elseif (strcasecmp($target, "JSON") == 0) {
 		return json_encode($arr);
 	}
-
 
 
 	/*if (strcmp($source, "none") ==  0) {
@@ -474,19 +498,17 @@ function sendTestFollowUpMessageToUser($user_id, $msg_id, $intent, $original_msg
 
 	$number = getUserMobileNumber($user_id);
 	$user_name = getUserName($user_id);
-	$user_goal = getUserGoal($user_id);
 
 	if (count($raw_msg_params) == 0) {
 		$msg_params = getReplyConfirmationMessage($user_name, $original_msg);
 	} else {
 		logDebug("User mobile number:".$number);
 		logDebug("User name:".$user_name);
-		logDebug("User goals:".$user_goal);
 		logDebug("Raw message intent match:".$raw_msg_params['intent_match']);
 		logDebug("Raw message text:".$raw_msg_params['text']);
 
 		#fill message pattern
-		$msg_params = $raw_msg_params;#fillMessagePattern($raw_msg_params, $user_name, $user_goal);
+		$msg_params = $raw_msg_params;
 
 		logDebug("Message text after pattern fill:".$msg_params['text']);
 	}

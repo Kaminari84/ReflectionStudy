@@ -47,8 +47,8 @@ $STUDY_END_MSG =" This is the end of the Reflection Study. We will send you a su
 $DAY_END_TIME_H = 23; $DAY_END_TIME_M = 00;
 
 #reminder delays
-$RMD1_DELAY_M = 4;
-$RMD2_DELAY_M = 4;
+$RMD1_DELAY_M = 30;
+$RMD2_DELAY_M = 30;
 
 function transitionState($actState, $time, $stopMessage) {
 	global $DAY_END_TIME;
@@ -92,12 +92,15 @@ function transitionMState($actMState, $time, $user_id) {
 				"prevState" => $actMState, 
 				"nextState" => $actMState];
 
+	$user_timezone = getUserTimezone($user_id);
+	date_default_timezone_set($user_timezone);
 	logDebug("Time offset: " . date("M-d-Y H:i:s", $time));
 	logDebug("Current M state: <".$actMState.">");
 
 	switch ($actMState) {
 		case "DAY_START":
 			logDebug("Checking transitions for state: DAY_START");
+			date_default_timezone_set('America/Los_Angeles');
 			logDebug("DAY_MSG_TIME:".date("M-d-Y H:i:s", $DAY_MSG_TIME));
 			logDebug("DAY_END_TIME:".date("M-d-Y H:i:s", $DAY_END_TIME));
 	
@@ -327,8 +330,8 @@ function enterState($state, $user_id, $number, $email) {
 			break;
 		case "IN_STUDY":
 			logDebug("In IN_STUDY");
-			$minTime = getUserMinTime($user_id);
-			$maxTime = getUserMaxTime($user_id);
+			$minTime = date("g:i a", strtotime(getUserMinTime($user_id)));
+			$maxTime = date("g:i a", strtotime(getUserMaxTime($user_id)));
 
 			$message_text = $STUDY_START_MSG . " " . $minTime . " and " . $maxTime . $STUDY_START_MSG_2;
 
@@ -387,7 +390,8 @@ function enterMState($mstate, $user_id, $time) {
 	            
 	            logDebug("Trying to send messsage to user ".$user_id.", msg_id:".$message_entry['id']);
 	            #sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
-	            sendTestMessageToUser($user_id, $message_entry['id'], $sdate, $edate);
+	            $sent_params = sendTestMessageToUser($user_id, $message_entry['id'], $sdate, $edate);
+	            setChartDataForUserLog($user_id, $log_entry[0]['id'], $sent_params['data'], $sent_params['image']);
 	        }
 			break;
 		case "RMD1_SENT":
@@ -497,8 +501,9 @@ function inState($state, $user_id) {
 
 			//Check if we have access to fitbit data
 			logDebug("Getting fitbit access status for user:".$user_id);
-			$fitbit_id = getUserFitbitID($user_id);
-			$fitbit_profile = getFitbitProfile($fitbit_id);
+			$fitbit_profile_id = getUserFitbitProfileID($user_id);
+			$fitbit_id = getFitbitID($fitbit_profile_id);
+			$fitbit_profile = getFitbitProfile($fitbit_profile_id);
 			logDebug("Current access token is:".$fitbit_profile['access_token']);
 
 			//do we need to ask for access approval?
@@ -506,7 +511,7 @@ function inState($state, $user_id) {
 				logDebug("Access token empty!");
 					
 				$last_call_date = strtotime(getFitbitLastCallTime($user_id));
-			    $next_call_date = strtotime("+2 hours", $last_call_date);
+			    $next_call_date = strtotime("+5 hours", $last_call_date);
 			    
 			    logDebug("Last call time:".date('Y-m-d H:i:s',$last_call_date).", next call time:".date('Y-m-d H:i:s',$next_call_date));
 

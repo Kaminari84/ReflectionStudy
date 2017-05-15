@@ -26,8 +26,8 @@ logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
 $test_messages = [ 
 	["id" => 1, "text" => "How many days did you meet that goal?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily"], "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/3ca81f13-52ab-41f4-98a8-d7090b474baa?subscription-key=***REMOVED***&timezoneOffset=0&verbose=true&q="],
-	["id" => 2, "text" => "Have you made progress towards your?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["weekly","long-term"],
-	["id" => 3, "text" => "Which day(s) were you most physically active?", 				"scope" => "WEEK", "source" => "STEPS", "subject" => "goal"],
+	["id" => 2, "text" => "Have you made progress towards that goal?", 					"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["long_term"] ],
+	["id" => 3, "text" => "Which day(s) were you most physically active?", 				"scope" => "WEEK", "source" => "STEPS", "subject" => "activity"],
 	["id" => 4, "text" => "Which day(s) were you least active?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "activity"],
 	["id" => 5, "text" => "Can you spot any weekly patterns in your data?", 			"scope" => "2WEEKS", "source" => "STEPS", "subject" => "pattern", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/3ca81f13-52ab-41f4-98a8-d7090b474baa?subscription-key=***REMOVED***&timezoneOffset=0&verbose=true&q="],
 	["id" => 6, "text" => "Do you remember to wear your fitbit everyday?", 				"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/3ca81f13-52ab-41f4-98a8-d7090b474baa?subscription-key=***REMOVED***&timezoneOffset=0&verbose=true&q="],
@@ -36,10 +36,10 @@ $test_messages = [
 	["id" => 8, "text" => "Why is physical activity important for you?", 								"scope" => "WEEK", "source" => "STEPS", "subject" => "activity"],
 	["id" => 9, "text" => "What changes have you done to improve your level of physical activity?", 	"scope" => "2WEEKS", "source" => "STEPS", "subject" => "activity"],
 	["id" => 10, "text" => "Is your caloric expenditure directly connected to your steps?", 			"scope" => "WEEK", "source" => "STEPS", "subject" => "tracking"],
-	["id" => 11, "text" => "What helped you during the week to make progress towards your goal?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["weekly","long-term"],
+	["id" => 11, "text" => "What helped you during the week to make progress towards that goal?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["weekly","long_term"] ],
 	["id" => 12, "text" => "What are some of the ways that your work has impacted your physical activity this week?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/937718a3-fdc4-4447-a530-25a17c7bd068?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
 	["id" => 13, "text" => "Is fitbit tracking your data accurately? Why or why not?", 					"scope" => "WEEK", "source" => "STEPS", "subject" => "tracking"],
-	["id" => 14, "text" => "Is your goal easy/difficult to achieve for you?", 							"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily","weekly"],
+	["id" => 14, "text" => "Is this goal easy/difficult to achieve for you?", 							"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily","weekly"] ],
 ];
 
 $test_followup_messages = [
@@ -57,7 +57,7 @@ $test_followup_messages = [
 	["msg_id" => 8, "text" => "How can you be more active?",															"intent_match" => "Any"],
 	["msg_id" => 9, "text" => "What can you do better next week?",														"intent_match" => "Any"],
 	["msg_id" => 10, "text" => "What other metrics do you want to track to understand you caloric expenditure better?",	"intent_match" => "Any"],
-	["msg_id" => 11, "text" => "What should you do in the future to help you reach your goal?",							"intent_match" => "Any"],
+	["msg_id" => 11, "text" => "What could you do in the future to help you reach your goal?",							"intent_match" => "Any"],
 	["msg_id" => 12, "text" => "What could you do to prevent your work from impacting your physical activity?",			"intent_match" => "Work_has_impacted"],
 	["msg_id" => 12, "text" => "Do you think it might be a problem next week?",											"intent_match" => "Work_has_not_impacted"],
 	/* No follow up for message 12*/

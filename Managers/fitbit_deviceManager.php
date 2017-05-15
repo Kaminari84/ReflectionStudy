@@ -97,9 +97,10 @@ function callFitbitAPIForDevices($user_id) {
 	    #$url = "https://api.fitbit.com/1/user/-/activities/tracker/steps/date/today/max.json";
 	    logDebug("Url for requesting FITBIT API devices:". $url);
 
-	    $fitbit_id = getUserFitbitID($user_id);
+	    $fitbit_profile_id = getUserFitbitProfileID($user_id);
+	    $fitbit_id = getFitbitID($fitbit_profile_id);
 	    logDebug("Got user fitbit id:".$fitbit_id);
-	    $access_token = getAccessTokens($fitbit_id)['access_token'];
+	    $access_token = getAccessTokens($fitbit_profile_id)['access_token'];
 	    logDebug("Access token when accessing FITBIT API data:". $access_token);
 
 		$options = array(
@@ -130,9 +131,10 @@ function callFitbitAPIForDevices($user_id) {
 				logDebug("Error type:". $error["errorType"]);
 				if ($error["errorType"] == "expired_token") {
 					logDebug("Just expired token, refreshing!!!");
-					$fitbit_id = getUserFitbitID($user_id);
+					$fitbit_profile_id = getUserFitbitProfileID($user_id);
+					$fitbit_id = getUserFitbitID($fitbit_profile_id);
 					logDebug("Got user fitbit id:".$fitbit_id);
-					refreshAccessToken($fitbit_id, $user_id);
+					refreshAccessToken($fitbit_profile_id, $user_id);
 					$result_response = "expired_token"; //this will not be returned as we will try again
 					$repeat = 1;
 					continue;

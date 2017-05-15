@@ -17,6 +17,7 @@ connectToDB();
 
 $code = isset($_GET['code']) ? $_GET['code'] : NULL;
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : NULL;
+$fitbit_profile_id = NULL;
 $fitbit_id = NULL;
 $fitbit_secret = NULL;
 
@@ -28,15 +29,17 @@ if (!$user_id) {
 	$user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : NULL;
 } else {
 	//Set fitbit id to session for later
-	logDebug("There is fitbit_id from GET, saving to session!");
+	logDebug("There is user id from GET, saving to session!");
 	$_SESSION['user_id'] = $user_id;
 }
 
 if ($user_id) {
 	logDebug("Go user ID somehow, retrieving the rest...");
-	$fitbit_id = getUserFitbitID($user_id);
-	$fitbit_secret = getFitbitSecret($fitbit_id);
+	$fitbit_profile_id = getUserFitbitProfileID($user_id);
+	$fitbit_id = getFitbitID($fitbit_profile_id);
+	$fitbit_secret = getFitbitSecret($fitbit_profile_id);
 	logDebug("User ID:".$user_id);
+	logDebug("Fitbit profile ID:".$fitbit_profile_id);
 	logDebug("Fitbit ID:".$fitbit_id);
 	logDebug("Fitbit secret:".$fitbit_secret);
 }
@@ -73,6 +76,7 @@ if ($code) {
 	if ($result === FALSE) { 
 		print("ERROR!");
 	} else {
+		logDebug("Fitbit profile ID:".$fitbit_profile_id);
 		logDebug("Fitbit ID:".$fitbit_id);
 		logDebug("Fitbit secret:".$fitbit_secret);
 		logDebug("Fitbit code:".$code);
@@ -85,7 +89,7 @@ if ($code) {
 		if (array_key_exists("access_token", $assoc)) {
 			logDebug("Access token:". $assoc['access_token']);
 			logDebug("Refresh token:". $assoc['refresh_token']);
-			setAccessTokens($fitbit_id, $assoc['access_token'], $assoc['refresh_token']);
+			setAccessTokens($fitbit_profile_id, $assoc['access_token'], $assoc['refresh_token']);
 
 			print "<div style='margin-left:auto; marigin-right:auto'>Thank you so much! <br >Your approval has been recorderd. 
 			You can always revoke access at any time by going to <b><i>https://dev.fitbit.com/apps</b></i>. 
@@ -97,6 +101,7 @@ if ($code) {
 		}
 
 		$code = NULL;
+		$fitbit_profile_id = NULL;
 		$fitbit_id = NULL;
 		$fitbit_secret = NULL;
 		$user_id = NULL;
