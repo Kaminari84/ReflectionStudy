@@ -4,10 +4,20 @@
 //	chdir("public_html/ReflectionStudy/auto_logs/");
 //}
 
-include_once("Managers/userManager.php");
 
-$logPath = "log_ReflectionStudy_SUL.txt";
-$logFile = fopen($logPath, "a");
+include_once("Managers/dbManager.php");
+
+// Check if normal loop or response from Twilio
+$sms_from = isset($_REQUEST['From']) ? $_REQUEST['From'] : NULL;
+if ($sms_from) {
+	logDebug("SMS response triggered loop");
+	$logPath = "log_ReflectionStudy_SMS.txt";
+	$logFile = fopen($logPath, "a");
+} else {
+	logDebug("Cron general triggered loop");
+	$logPath = "log_ReflectionStudy_CRON.txt";
+	$logFile = fopen($logPath, "a");
+}
 
 // current directory
 logDebug("INIT DIR:".getcwd());
@@ -16,7 +26,7 @@ logDebug("INIT DIR:".getcwd());
 //logDebug("CHANGE DIR:".getcwd());
 
 logDebug("----STATE UPDATE LOOP----");
-
+include_once("Managers/userManager.php");
 include_once("Managers/mobileManager.php");
 include_once("Managers/responseManager.php");
 include_once("Managers/fitbit_dataManager.php");
@@ -24,14 +34,6 @@ include_once("Managers/fitbit_profileManager.php");
 include_once("Managers/fitbit_deviceManager.php");
 include_once("Managers/studyManager.php");
 include_once("Managers/luisManager.php");
-
-// Check if normal loop or response from Twilio
-$sms_from = isset($_REQUEST['From']) ? $_REQUEST['From'] : NULL;
-if ($sms_from) {
-	logDebug("SMS response triggered loop");
-} else {
-	logDebug("Cron general triggered loop");
-}
 
 date_default_timezone_set('America/Los_Angeles');
 $now = time();
@@ -44,7 +46,7 @@ $STUDY_START_MSG_2 = ". Please read the prompt carefully and send a response.";
 $STUDY_END_MSG =" This is the end of the Reflection Study. We will send you a survey link shortly.";
 
 #when the new day starts
-$DAY_END_TIME_H = 23; $DAY_END_TIME_M = 00;
+$DAY_END_TIME_H = 23; $DAY_END_TIME_M = 30;
 
 #reminder delays
 $RMD1_DELAY_M = 30;
@@ -131,21 +133,21 @@ function transitionMState($actMState, $time, $user_id) {
 					logDebug("Intent of the first response:".$intent);
 
 					// unrecognized followup, end the dialogue
-					if (strcasecmp($intent, "None") == 0) {
+					/*if (strcasecmp($intent, "None") == 0) {
 						logDebug("Unrecognized intent, ending dialogue...");
 
 						#change the state
 						$status["stateChanged"] = 1;
 						$status["nextState"] = "DIALOGUE_COMPLETE";
 						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
-					} else {
-						#recognized intent, but still can be "Any" or specific
-						logDebug("Reconized intent, changing state to sent followup...");
-						#change the state
-						$status["stateChanged"] = 1;
-						$status["nextState"] = "FOLLOWUP_SENT";
-						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
-					}
+					} else {*/
+					#recognized intent, but still can be "Any" or specific
+					logDebug("Recognized intent, changing state to sent followup...");
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "FOLLOWUP_SENT";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					//}
 				# There is not follow up to this message, directly go to the dialogue end state
 				} else {
 					#recognized intent, but still can be "Any" or specific
@@ -190,21 +192,21 @@ function transitionMState($actMState, $time, $user_id) {
 					logDebug("Intent of the first response:".$intent);
 
 					// unrecognized response, end the dialogue
-					if (strcasecmp($intent, "None") == 0) {
+					/*if (strcasecmp($intent, "None") == 0) {
 						logDebug("Unrecognized intent, ending dialogue...");
 
 						#change the state
 						$status["stateChanged"] = 1;
 						$status["nextState"] = "DIALOGUE_COMPLETE";
 						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
-					} else {
-						#recognized intent, but still can be "Any" or specific
-						logDebug("Reconized intent, changing state to sent followup...");
-						#change the state
-						$status["stateChanged"] = 1;
-						$status["nextState"] = "FOLLOWUP_SENT";
-						logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
-					}
+					} else {*/
+					#recognized intent, but still can be "Any" or specific
+					logDebug("Recognized intent, changing state to sent followup...");
+					#change the state
+					$status["stateChanged"] = 1;
+					$status["nextState"] = "FOLLOWUP_SENT";
+					logDebug("Changing state from ".$actMState. " to ".$status["nextState"]." ...");
+					//}
 				# There is not follow up to this message, directly go to the dialogue end state
 				} else {
 					#recognized intent, but still can be "Any" or specific
@@ -428,17 +430,17 @@ function enterMState($mstate, $user_id, $time) {
 					logDebug("Intent of the first response:".$intent);
 
 					// unrecognized response, end the dialogue
-					if (strcasecmp($intent, "None") == 0) {
+					/*if (strcasecmp($intent, "None") == 0) {
 						logDebug("ERROR:We should never be here! - FOLLOWUP_SENT and no intent");
-					} else {
-						//Set status for already sent
-            			setFollowupSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
-						
-						logDebug("Trying to send followup to user ".$user_id.", msg_id:".$message_entry['id']);
-	            		#sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
-	            		sendTestFollowUpMessageToUser($user_id, $message_entry['id'], $intent, $text);
+					} else {*/
+					//Set status for already sent
+        			setFollowupSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
+					
+					logDebug("Trying to send followup to user ".$user_id.", msg_id:".$message_entry['id']);
+            		#sendMessagetoUser($user_id, $message_entry['id'], $sdate, $edate);
+            		sendTestFollowUpMessageToUser($user_id, $message_entry['id'], $intent, $text);
 
-					}
+					//}
 				} else {
 					logDebug("ERROR:We should never be here! - FOLLOWUP_SENT and no responses");
 				}
@@ -454,7 +456,7 @@ function enterMState($mstate, $user_id, $time) {
 
 			#time to send the reminder
 			$rmd_text = getSecondReminder($user_name);
-			sendSMS($number, $rmd_text);
+			//DON'T SEND SECOND REMINDER! --- sendSMS($number, $rmd_text);
 
 			#set the time when reminder was sent and indicate it has already been sent by that
 			setRmd2SentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
@@ -468,7 +470,12 @@ function enterMState($mstate, $user_id, $time) {
 
 			#time to send thank you for providing all the information
 			$thank_you_text = getDialogueEndThankYou($user_name);
-			sendSMS($number, $thank_you_text);
+			#is there a response?
+			if (count($thank_you_text) > 0) {
+				sendSMS($number, $thank_you_text["text"]);
+			} else {
+				sendSMS($number, "Thank you!");
+			}
 
 			#set the time when thank you was etn
 			setDialogueCompleteSentTimeForUserLog($user_id, $log_entry[0]['id'], date("Y-m-d H:i:s",$time));
@@ -504,10 +511,10 @@ function inState($state, $user_id) {
 
 				if (time() > $next_call_date) {
 					logDebug("Time to ask for access approval again!");
-					setFitbitLastCallTime($user_id, date('Y-m-d H:i:s',time()));
+					/*setFitbitLastCallTime($user_id, date('Y-m-d H:i:s',time()));
 
 					//reguest approval
-					requestFitbitAccessApproval($user_id);
+					requestFitbitAccessApproval($user_id);*/
 				}
 			} else {
 				//check if it is time to call Fitbit for data update
@@ -584,6 +591,14 @@ function processSMSMessages($state, $mstate) {
 
 	logDebug("Processing SMS messages <".$state.">,<".$mstate.">...");
 
+	/*srand(make_seed());
+	$delay = rand(0,20);
+	logDebug("Delaying response: ".$delay." seconds");
+
+	//sleep for 5 seconds
+	sleep($delay);
+	logDebug("Delay done!");*/
+
 	switch ($mstate) {
 		case "DAY_START":
 		case "DIALOGUE_COMPLETE":
@@ -625,17 +640,20 @@ function processSMSMessages($state, $mstate) {
 
 				#check if this message requires luis smarts
 				$msg_intent = "Any";
+				$msg_score = 0;
 				if (array_key_exists("luis_url", $msg_entry)) {
 					logDebug("Has luis!");	
 
 					$msg_luis_url = $msg_entry['luis_url'];
 					$intent_entry = getIntent($msg_luis_url, $contents, $return_type="Array");
 					$msg_intent = $intent_entry['intent'];
-					logDebug("Luis intent: ".print_r($intent_entry,TRUE));
+					$msg_score = $intent_entry['score'];
+					$msg_intent_raw = $intent_entry['intent_raw'];
+					logDebug("Luis intent: ".print_r($intent_entry,TRUE).", score:".$msg_score);
 				}
 
 				//Add to the messages
-				addUserResponse($user_id, $contents, $msg_intent);
+				addUserResponse($user_id, $contents, $msg_intent, $msg_score, $msg_intent_raw);
 			}
 			break;
 		case "RMD2_SENT":
@@ -700,14 +718,14 @@ logDebug("Going through user list to update their states");
 
 foreach ($users as $n => $user) {
 	logDebug("****Updating user [".$n."]->".$user["id"].", ".$user["number"].", ".$user["timezone"]."****");
-
+	
 	$user_id = $user["id"];
-	$stopMessage = isStopMessage($user_id);
-	$user_timezone = $user["timezone"];
 
 	//Indicate we are updating this user now
-	#date_default_timezone_set('America/Los_Angeles');
+	date_default_timezone_set('America/Los_Angeles');
 	setLastUpdate($user_id, date("Y-m-d H:i:s", time()));
+
+	$user_timezone = $user["timezone"];
 
 	if ($user_timezone !== null) {
 		logDebug("Setting user timezone: ".$user_timezone);
@@ -718,6 +736,7 @@ foreach ($users as $n => $user) {
 	}
 
 	logDebug("Getting user log entry in user main loop");
+	$stopMessage = isStopMessage($user_id);
 
 	$log_entry = getUserDayStudyLog($user_id, -1, false);
 	$planned_time = $log_entry[0]['planned_time'];

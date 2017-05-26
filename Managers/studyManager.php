@@ -14,10 +14,13 @@ function generateMessagesForUser() {
 	logDebug("Generating messages for user");
 
 	$messages = getAllMessages();
+	$two_weeks_idx = [1,2,3,5,6, 8,9,11,12,13, 15,16,17,20];
 
 	$selectedMessages = array();
 	for ($i=0; $i<count($messages); $i++) {
-		$selectedMessages[] = $messages[$i]['id'];
+		if (in_array($messages[$i]['id'],$two_weeks_idx)) {
+			$selectedMessages[] = $messages[$i]['id'];
+		}
 	}
 
 	return $selectedMessages;
@@ -76,6 +79,9 @@ function getMessageLogsSent($user_id) {
 
 function getUserDayStudyLog($user_id, $local_date = -1, $create = true) {
 	global $conn;
+
+	date_default_timezone_set('America/Los_Angeles');
+	$date = date("Y-m-d H:i:s", time());
 
 	if ($local_date == -1) {
 		date_default_timezone_set(getUserTimezone($user_id));
@@ -291,12 +297,10 @@ function setChartDataForUserLog($user_id, $log_id, $chart_data, $chart_img) {
 ### COMMUNICATING WTH USER ####
 
 function requestFitbitAccessApproval($user_id) {
-	logDebug("Sending message to request Fitbit access approaval...");
-	$fitbit_profile_id = getUserFitbitProfileID($user_id);
-	$fitbit_id = getFitbitID($fitbit_profile_id);
+	logDebug("Sending message to request Fitbit access approval...");
 	$mobile_number = getUserMobileNumber($user_id);
 
-	$message = "This is a request for approval of access to fitbit data for Reflection study. Please follow the link to grant approval: https://www.rkocielnik.com/ReflectionStudy/approveAccess.php?user_id=".$user_id;
+	$message = "This is a request from the Reflective Prompts University of Washington study for a temporary access approval to your Fitbit data. Please follow the link (you will need to log into your Fitbit account) to grant temporary access approval: https://www.rkocielnik.com/ReflectionStudy/approveAccess.php?user_id=".$user_id;
 
 	sendSMS($mobile_number, $message);
 }
@@ -433,7 +437,7 @@ function sendTestMessageToUser($user_id, $msg_id, $start_date, $end_date, $targe
 		$arr["luis_url"] = $msg_params["luis_url"];
 	}
 
-	if (strcmp($source, "none") !=  0) {
+	if (strcasecmp($source, "none") !=  0) {
 		logDebug("Message with scope, generate chart for data!");
 		#get the activity chart for message
 		$chart_img_params = getUserActivityChart($user_id, $source, $scope, $start_date, $end_date, $filename, "Mobile");
@@ -505,7 +509,7 @@ function sendTestFollowUpMessageToUser($user_id, $msg_id, $intent, $original_msg
 		logDebug("Raw message text:".$raw_msg_params['text']);
 
 		#fill message pattern
-		$msg_params = $raw_msg_params;
+		$msg_params = fillFollowUpMessagePattern($raw_msg_params);
 
 		logDebug("Message text after pattern fill:".$msg_params['text']);
 	}
@@ -735,6 +739,20 @@ if ($action != NULL && $action == "assignMessagesToUser") {
 	$original_msg = isset($_GET['original_msg']) ? $_GET['original_msg'] : NULL;
 
 	$msg_params = getReplyConfirmationMessage($user_name, $original_msg);
+	logDebug("Message params:".print_r($msg_params, TRUE));
+
+	$json = json_encode($msg_params);
+	logDebug("Message json:".$json);
+
+	echo $json;
+} elseif ($action != NULL && $action == "getDialogueCompleteMessage") {
+	logDebug("Calling getDialogueCompleteMessage - Message Manager");
+	logDebug("Trying to connect to DB...");
+	connectToDB();
+
+	$user_name = isset($_GET['user_name']) ? $_GET['user_name'] : NULL;
+
+	$msg_params = getDialogueEndThankYou($user_name);
 	logDebug("Message params:".print_r($msg_params, TRUE));
 
 	$json = json_encode($msg_params);

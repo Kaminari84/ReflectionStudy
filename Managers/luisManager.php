@@ -22,7 +22,7 @@ function getIntent($url, $text, $return_type="Array") {
 	$intent =  $assoc['topScoringIntent']['intent'];
 	$score = $assoc['topScoringIntent']['score'];
 
-	$arr = ["intent" => $intent, "score" => $score];
+	$arr = ["intent" => $intent, "score" => $score, "intent_raw" => $result];
 
 	if (strcasecmp($return_type, "Array") == 0) {
 		return $arr;
