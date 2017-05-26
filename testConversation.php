@@ -148,7 +148,7 @@ if (array_key_exists("luis_url", $msg_params)) {
 	</style>
 
     <script>
-    	var user_states = ["SEND_INITIAL", "SEND_FOLLOW_UP", "SEND_FEEDBACK"];
+    	var user_states = ["SEND_INITIAL", "SEND_FOLLOW_UP", "SEND_DIALOGUE_END", "SEND_FEEDBACK"];
     	var user_state_id = 0;
 
 	  	$( document ).ready(function() {
@@ -260,6 +260,12 @@ if (array_key_exists("luis_url", $msg_params)) {
 						}, 1000);
 			  		}
 
+			  	} else if (getUserState() == "SEND_DIALOGUE_END") {
+			  		console.log("Just closing the dialogue");
+			  		//ask for dialogue complete message
+		    		setTimeout(function() {
+					    getDialogueCompleteMessage('<?= $user_name ?>');
+					}, 1000);
 			  	} else {
 			  		console.log("Getting the feedback confirmation message...");
 				  	//ask for confirmation reply
@@ -269,27 +275,6 @@ if (array_key_exists("luis_url", $msg_params)) {
 		    	}
 		    }
     	};
-
-    	function getMessageFollowUp(user_id, msg_id, original_msg, intent) {
-			console.log("Calling the getMessageFollowUp function with params -> msg_id:" + msg_id + ", original_msg:" + original_msg +", intent: " + intent);
-			var request = $.ajax({
-		        url: "Managers/studyManager.php",
-		        type: "GET",
-		        data: {action: "getMessageFollowUp", user_id: user_id, msg_id: msg_id, original_msg: original_msg, intent: intent},
-		        dataType: "html",
-		        async: true, 
-		        success : function (msg)
-		        {
-		        	console.log( "Message got ("+msg+")" );
-		          	var obj = JSON.parse(msg);
-
-		          	console.log("Got followup message: " + obj);
-
-		          	//Add message to the chat
-		          	showBotMessage(obj.text);
-		  		}
-		    });
-		}
 
     	function botMessage(user_id, msg_id, message="", intent="Any") {
     		console.log("Trying to get bot message...");
@@ -341,13 +326,59 @@ if (array_key_exists("luis_url", $msg_params)) {
 		  	elem.scrollTop = elem.scrollHeight;
 		}
 
+		function getMessageFollowUp(user_id, msg_id, original_msg, intent) {
+			console.log("Calling the getMessageFollowUp function with params -> msg_id:" + msg_id + ", original_msg:" + original_msg +", intent: " + intent);
+			var request = $.ajax({
+		        url: "Managers/studyManager.php",
+		        type: "GET",
+		        data: {action: "getMessageFollowUp", user_id: user_id, msg_id: msg_id, original_msg: original_msg, intent: intent},
+		        dataType: "html",
+		        async: true, 
+		        success : function (msg)
+		        {
+		        	console.log( "Message got ("+msg+")" );
+		          	var obj = JSON.parse(msg);
+
+		          	console.log("Got followup message: " + obj);
+
+		          	//Add message to the chat
+		          	showBotMessage(obj.text);
+		  		}
+		    });
+		}
+
     	function getReplyConfirmationMessage(user_name, original_msg) {
-    		console.log("Trying to get reply confirmaion message...");
+    		console.log("Trying to get reply confirmation message...");
 
 		    var request = $.ajax({
 		        url: "Managers/studyManager.php",
 		        type: "GET",
 		        data: {action: "getReplyConfirmationMessage", user_name: user_name, original_msg: original_msg},
+		        dataType: "html",
+		        async: true, 
+		        success : function (msg)
+		        {
+		        	console.log( "Message got ("+msg+")" );
+		          	var obj = JSON.parse(msg);
+
+		          	//Add message to the chat
+		          	var chat_box = document.getElementById("chat_box");
+	    			chat_box.innerHTML = chat_box.innerHTML + "<div class='bot_msg'>"+obj.text+"</div>";
+
+			      	//Scroll to contents
+    			 	var elem = document.getElementById('chat_box');
+		  			elem.scrollTop = elem.scrollHeight;
+		  		}
+		    });
+    	}
+
+    	function getDialogueCompleteMessage(user_name) {
+    		console.log("Trying to get dialogue complete message...");
+
+		    var request = $.ajax({
+		        url: "Managers/studyManager.php",
+		        type: "GET",
+		        data: {action: "getDialogueCompleteMessage", user_name: user_name},
 		        dataType: "html",
 		        async: true, 
 		        success : function (msg)

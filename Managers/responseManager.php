@@ -6,7 +6,7 @@ include_once("studyManager.php");
 logDebug("----RESPONSE MANAGER LOAD----");
 logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
-function addUserResponse($user_id, $text, $intent="") {
+function addUserResponse($user_id, $text, $intent="", $score = 0, $intent_raw="") {
 	global $conn;
 	logDebug("Logging user (".$user_id.") response...");
 
@@ -27,19 +27,25 @@ function addUserResponse($user_id, $text, $intent="") {
 	$log_id = $log_entry[0]['id'];
 	logDebug("Got study log id:".$log_id);
 
+	$clean_intent_raw = str_replace("\"","'",$intent_raw);
+
 	$sql = "INSERT INTO RS_response(
 		user_id,
 		log_id,
 		date,
 		local_date,
 		text,
-		intent) VALUES 
+		intent,
+		score,
+		intent_raw) VALUES 
 			(\"$user_id\",
 			\"$log_id\",
 			\"$today_date\",
 			\"$local_today_date\",
 			\"$clean_text\",
-			\"$intent\")";
+			\"$intent\",
+			\"$score\",
+			\"$clean_intent_raw\")";
 
 	logDebug("Running save SQL: " . $sql);
 

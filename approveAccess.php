@@ -17,9 +17,9 @@ connectToDB();
 
 $code = isset($_GET['code']) ? $_GET['code'] : NULL;
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : NULL;
-$fitbit_profile_id = NULL;
-$fitbit_id = NULL;
-$fitbit_secret = NULL;
+#$fitbit_profile_id = NULL;
+$fitbit_id = "***REMOVED***";
+$fitbit_secret = "***REMOVED***";
 
 session_start();
 
@@ -33,16 +33,16 @@ if (!$user_id) {
 	$_SESSION['user_id'] = $user_id;
 }
 
-if ($user_id) {
+/*if ($user_id) {
 	logDebug("Go user ID somehow, retrieving the rest...");
-	$fitbit_profile_id = getUserFitbitProfileID($user_id);
-	$fitbit_id = getFitbitID($fitbit_profile_id);
-	$fitbit_secret = getFitbitSecret($fitbit_profile_id);
+	#$fitbit_profile_id = getUserFitbitProfileID($user_id);
+	$fitbit_id = "***REMOVED***"; #getFitbitID($fitbit_profile_id);
+	$fitbit_secret = "***REMOVED***"; #getFitbitSecret($fitbit_profile_id);
 	logDebug("User ID:".$user_id);
-	logDebug("Fitbit profile ID:".$fitbit_profile_id);
+	#logDebug("Fitbit profile ID:".$fitbit_profile_id);
 	logDebug("Fitbit ID:".$fitbit_id);
 	logDebug("Fitbit secret:".$fitbit_secret);
-}
+}*/
 
 if ($code) {
 	logDebug("Got code:".$code);
@@ -76,7 +76,7 @@ if ($code) {
 	if ($result === FALSE) { 
 		print("ERROR!");
 	} else {
-		logDebug("Fitbit profile ID:".$fitbit_profile_id);
+		#logDebug("Fitbit profile ID:".$fitbit_profile_id);
 		logDebug("Fitbit ID:".$fitbit_id);
 		logDebug("Fitbit secret:".$fitbit_secret);
 		logDebug("Fitbit code:".$code);
@@ -87,23 +87,51 @@ if ($code) {
 		#print_r($assoc);
 		#print("Has access token:". array_key_exists("access_token", $assoc));
 		if (array_key_exists("access_token", $assoc)) {
-			logDebug("Access token:". $assoc['access_token']);
-			logDebug("Refresh token:". $assoc['refresh_token']);
-			setAccessTokens($fitbit_profile_id, $assoc['access_token'], $assoc['refresh_token']);
+			$access_token = $assoc['access_token'];
+			$refresh_token = $assoc['refresh_token'];
+			$expires_in = (int)$assoc['expires_in'];
+			$scope = $assoc['scope'];
+			$token_type = $assoc['token_type'];
+			$fitbit_user_id = $assoc['user_id'];
 
-			print "<div style='margin-left:auto; marigin-right:auto'>Thank you so much! <br >Your approval has been recorderd. 
-			You can always revoke access at any time by going to <b><i>https://dev.fitbit.com/apps</b></i>. 
+			logDebug("Access token:". $access_token);
+			logDebug("Refresh token:". $refresh_token);
+			logDebug("Expires in:". $expires_in);
+			logDebug("Scope:". $scope);
+			logDebug("Token type:". $token_type);
+			logDebug("Fitbit user id:". $fitbit_user_id);
+
+			#get the fitbit profile id, or create new one
+			$response = getFitbitProfileByFitbitUserId($fitbit_user_id);
+			#there is provile already
+			if (count($response) > 0) {
+				logDebug("Fitbit profile for this user account already exists, sharing!");
+				$fitbit_profile_id = $response[0]['id'];
+			#create profile because there is none yet
+			} else {
+				logDebug("Fitbit profile for this user account does not exist yet, creating!");
+
+				#crate the new profile
+				$fitbit_profile_id = addFitbitProfile($fitbit_id, $fitbit_secret, $fitbit_user_id);
+			}
+
+			#attach the profile to the user
+			setUserFitbitProfileID($user_id, $fitbit_profile_id);
+
+			#fill in the token rights
+			setAccessTokens($fitbit_profile_id, $access_token, $refresh_token, $expires_in, $scope, $token_type, $fitbit_user_id);
+
+			print "<div style='margin-left:auto; marigin-right:auto; text-align:center'>Thank you so much! <br >Your approval has been recorderd. 
+			You can revoke access at any time by going to the <a href='https://www.fitbit.com/user/profile/apps'>apps list in your Fitbit profile</a>. 
 			<br/>We will remind you about revoking your approval at the end of the study. <br /><br />
 			Rafal Kocielnik, PhD student <br />
-			rkoc@uw.edu <br />
+			ReflectionPrompts@gmail.com <br />
 			Human Centererd Design &amp; Engineering <br />
 			University of Washington </div>";
 		}
 
 		$code = NULL;
 		$fitbit_profile_id = NULL;
-		$fitbit_id = NULL;
-		$fitbit_secret = NULL;
 		$user_id = NULL;
 
 		// remove all session variables

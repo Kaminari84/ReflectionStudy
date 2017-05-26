@@ -7,15 +7,16 @@ logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
 
 $sentence_openings = [
-	["text" => "Hi <name>, thinking about the goals you set.", 	"subject" => "goal", "require" => "none"],
-	["text" => "Hi <name>, thinking about your activity.", 		"subject" => "activity", "require" => "none"],
-	["text" => "Hi <name>, regarding your progress.", 			"subject" => "achievement", "require" => "none"],
-	["text" => "Hi <name>, I have a good questions for you.", 	"subject" => "none", "require" => "none"],
-	["text" => "Hi <name>, take a look at your graph.", 		"subject" => "none", "require" => "graph"],
-	["text" => "Hi <name>!", 									"subject" => "none", "require" => "none"],
-	["text" => "Hi <name>, when looking at tracking.", 			"subject" => "tracking", "require" => "graph"],
-	["text" => "Hi <name>, I was looking at your data.",		"subject" => "none", "require" => "graph"],
-	["text" => "Hi <name>, I was checking your data.",			"subject" => "none", "require" => "graph"]
+	["text" => "Hi <name>, thinking about the goals you set.", 		"subject" => "goal", "require" => "none"],
+	["text" => "Hi <name>, taking your goals into consideration.", 	"subject" => "goal", "require" => "none"],
+	["text" => "Hi <name>, thinking about your activity.", 			"subject" => "activity", "require" => "none"],
+	["text" => "Hi <name>, regarding your progress.", 				"subject" => "achievement", "require" => "none"],
+	["text" => "Hi <name>, I have a good questions for you.", 		"subject" => "none", "require" => "none"],
+	["text" => "Hi <name>, take a look at your graph.", 			"subject" => "none", "require" => "graph"],
+	["text" => "Hi <name>!", 										"subject" => "none", "require" => "none"],
+	["text" => "Hi <name>, when looking at tracking.", 				"subject" => "tracking", "require" => "graph"],
+	["text" => "Hi <name>, I was looking at your data.",			"subject" => "none", "require" => "graph"],
+	["text" => "Hi <name>, I was checking your data.",				"subject" => "none", "require" => "graph"]
 ];
 
 $goal_introductions = [
@@ -23,11 +24,22 @@ $goal_introductions = [
 	["text" => "One of the goals you indicated is: <goal>."],
 	["text" => "You mentioned <goal> as one of your goals."],
 	["text" => "Referring to your goal of <goal>."],
-	["text" => "In relation to your goal of <goal>."]
+	["text" => "In relation to your goal of <goal>."],
+	["text" => "Specifically thinking about your goal of <goal>."],
+	["text" => "In particular considering the goal of <goal>."]
 ];
 
 $follow_up_openings = [
-	["text" => ""]
+	["text" => "Please think for a minute,"],
+	["text" => "Please stop and think for a while,"],
+	["text" => "Please take a moment to think,"],
+	["text" => "Please take a while to consider,"],
+	["text" => "Please think a bit,"],
+	["text" => "Please consider for a moment,"],
+	["text" => "Please reflect for a minute,"],
+	["text" => "Please reflect for a while,"],
+	["text" => "Please contemplate for a moment,"],
+	["text" => "Please take a moment to reflect,"]
 ];
 
 $confirmations = [
@@ -74,6 +86,16 @@ function getMatchingOpening($subjects, $require) {
 		}
 	}
 
+	srand(make_seed());
+	$opening_no = rand(0,count($selected_openings)-1);
+
+	return $selected_openings[$opening_no];
+}
+
+function getMatchingFollowUpOpening() {
+	global $follow_up_openings;
+
+	$selected_openings = $follow_up_openings;
 	srand(make_seed());
 	$opening_no = rand(0,count($selected_openings)-1);
 
@@ -130,7 +152,7 @@ function getDialogueEndThankYou($user_name) {
 	$raw_text = $dialoge_end_thank_you[$dety_no]['text'];
 	$final_text = replaceEntities($raw_text, ["<name>" => $user_name]);
 
-	return $final_text;
+	return ["text" => $final_text];
 }
 
 
@@ -151,7 +173,7 @@ function replaceEntities($text, $mapping_array) {
 function fillMessagePattern($raw_msg_params, $user_name, $user_goal) {
 	global $sentence_openings, $goal_introductions;	
 
-	logDebug("Got message parrams to fill template: ".print_r($raw_msg_params, true));
+	logDebug("Got message params to fill template: ".print_r($raw_msg_params, true));
 
 	#get matching opening
 	$subjects = [$raw_msg_params["subject"]];
@@ -189,6 +211,29 @@ function fillMessagePattern($raw_msg_params, $user_name, $user_goal) {
 	#replae template slots with data
 	$final_text = replaceEntities($message, $replacement_array);
 	logDebug("Complete message after replacement: ".$final_text);
+
+	$msg_params = $raw_msg_params;
+	$msg_params["text"] = $final_text;
+
+	return $msg_params;
+}
+
+function fillFollowUpMessagePattern($raw_msg_params) {
+	global $follow_up_openings;
+
+	logDebug("Got follow up message params to fill template: ".print_r($raw_msg_params, true));
+
+	#get the opening
+	$opening = getMatchingFollowUpOpening();
+	logDebug("Got follow up opening:".print_r($opening, TRUE));
+
+	$message = $opening["text"];
+
+	//The messages start with capital letter, but to glue them on top of opening, we need to convert them to lower case.
+	$message .= " " . strtolower($raw_msg_params["text"]);
+	logDebug("Complete follow up message: ".$message);
+
+	$final_text = $message;
 
 	$msg_params = $raw_msg_params;
 	$msg_params["text"] = $final_text;

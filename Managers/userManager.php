@@ -6,7 +6,7 @@ logDebug("----USER MANAGER LOAD----");
 logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
 
-function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $max_time, $fitbit_profile_id) {
+function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $max_time) {
 	global $conn;
 
 	date_default_timezone_set('America/Los_Angeles');
@@ -31,8 +31,7 @@ function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $m
 		local_start_date,
 		local_end_date,
 		min_msg_time,
-		max_msg_time,
-		fitbit_profile_id) VALUES 
+		max_msg_time) VALUES 
 			(\"$uuid\",
 			\"$user_number\",
 			\"$user_email\",
@@ -45,8 +44,7 @@ function addUser($user_number, $user_email, $user_name, $timezone, $min_time, $m
 			\"$local_today_date\",
 			\"\",
 			\"$min_time\",
-			\"$max_time\",
-			\"$fitbit_profile_id\")";
+			\"$max_time\")";
 
 	logDebug("Running save SQL: " . $sql);
 
@@ -126,6 +124,21 @@ function setFitbitNextCallTime($user_id, $date) {
 	logDebug("Setting user fitbit next call time...");
 
 	$sql = "UPDATE RS_user SET `next_fitbit_call_time`=\"$date\" WHERE `id`=\"$user_id\"";
+
+	logDebug("Running update SQL: " . $sql);
+
+	if ($conn->query($sql) === TRUE) {
+	    logDebug("Record updated successfully");
+	} else {
+	    logError("Error: " . $sql . "<br>", $conn->error);
+	}
+}
+
+function setUserFitbitProfileID($user_id, $fitbit_profile_id) {
+	global $conn;
+	logDebug("Setting user fitbit next call time...");
+
+	$sql = "UPDATE RS_user SET `fitbit_profile_id`=\"$fitbit_profile_id\" WHERE `id`=\"$user_id\"";
 
 	logDebug("Running update SQL: " . $sql);
 

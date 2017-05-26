@@ -11,6 +11,11 @@
     $token = '***REMOVED***';
     $client = new Client($sid, $token); 
 
+    include_once("Managers/dbManager.php");
+    $logPath = "log_ReflectionStudy_ADMIN.txt";
+    $logFile = fopen($logPath, "a");
+
+
     include_once("Managers/userManager.php");
     include_once("Managers/fitbit_profileManager.php");
     include_once("Managers/fitbit_dataManager.php");
@@ -95,14 +100,14 @@
     console.log("User max time: " + user_max_time);
 
     //FITBIT
-    var user_fitbit_id = $("#user_fitbit_id").val();
-    console.log("User fitbit id: " + user_fitbit_id);
+    //var user_fitbit_id = $("#user_fitbit_id").val();
+    //console.log("User fitbit id: " + user_fitbit_id);
 
-    var user_fitbit_secret = $("#user_fitbit_secret").val();
-    console.log("User fitbit secret: " + user_fitbit_secret);
+    //var user_fitbit_secret = $("#user_fitbit_secret").val();
+    //console.log("User fitbit secret: " + user_fitbit_secret);
 
     //Add Fitbit data
-    var request = $.ajax({
+    /*var request = $.ajax({
         url: "Managers/fitbit_profileManager.php",
         type: "GET",
         data: {action: "addFitbitProfile", fitbit_id: user_fitbit_id, fitbit_secret: user_fitbit_secret},
@@ -115,25 +120,25 @@
 
             fitbit_profile_id = msg;
 
-            console.log("Fitbit profile id added:"+fitbit_profile_id);
+            console.log("Fitbit profile id added:"+fitbit_profile_id); 
 
-            var request2 = $.ajax({
-                url: "Managers/userManager.php",
-                type: "GET",
-                data: {action: "addUser", user_number: user_number, user_name: user_name, user_email: user_email, user_timezone: user_timezone, user_min_time: user_min_time, user_max_time: user_max_time, fitbit_profile_id: fitbit_profile_id},
-                dataType: "html",
-                async: true, 
-                success : function (msg)
-                {
-                    console.log("User add success! ("+user_number+", "+user_name+") -> " + msg );
+        }
+    });*/
 
-                    //var obj = JSON.parse(msg);
-                    //console.log("Adding Fitbit prfile for User ID:" + obj.user_id);
+    var request2 = $.ajax({
+        url: "Managers/userManager.php",
+        type: "GET",
+        data: {action: "addUser", user_number: user_number, user_name: user_name, user_email: user_email, user_timezone: user_timezone, user_min_time: user_min_time, user_max_time: user_max_time},
+        dataType: "html",
+        async: true, 
+        success : function (msg)
+        {
+            console.log("User add success! ("+user_number+", "+user_name+") -> " + msg );
 
-                    //location.reload();
-                }
-            });
+            //var obj = JSON.parse(msg);
+            //console.log("Adding Fitbit prfile for User ID:" + obj.user_id);
 
+            location.reload();
         }
     });
   }
@@ -389,6 +394,7 @@
 
 </head>
 <body>
+    <b>Test Motivators server: <img height=30 src="http://motivators.hcde.uw.edu/test.png" /></b></br>
     <b>Update states:</b><button type="button" onclick="return updateStates();">Update</button>
     <br /><br />
     <b>List of participants</b> <br />
@@ -541,6 +547,7 @@
                         <th>Text</th>
                         <th>Source</th>
                         <th>Scope</th>
+                        <th>LUIS</th>
                         <th>Sent time</th>
                         <th>Rmd1 time</th>
                         <th>Followup time</th>
@@ -600,6 +607,7 @@
                     echo "<td>".$message_entry['text']."</td>";
                     echo "<td>".$message_entry['source']."</td>";
                     echo "<td>".$message_entry['scope']."</td>";
+                    echo "<td ".((array_key_exists("luis_url", $message_entry))?"style='background-color:#33FF33'":"").">".array_key_exists("luis_url", $message_entry)."</td>";
                     echo "<td>".$log_entry[0]['msg_sent_time']."</td>";
                     echo "<td>".$log_entry[0]['rmd1_sent_time']."</td>";
                     echo "<td>".$log_entry[0]['followup_sent_time']."</td>";
@@ -673,7 +681,6 @@
                 $last_fitbit_call_time = getFitbitLastCallTime($userID);
                 $next_fitbit_call_time = getFitbitNextCallTime($userID);
                 $fitbit_profile_id = getUserFitbitProfileID($userID);
-                $fitbit_id = getFitbitID($fitbit_profile_id);
                 $fitbit_profile_entry = getFitbitProfile($fitbit_profile_id);
                 echo "<table id='fitbit-profile' border='1' style='font-size:80%; border-collapse:collapse; table-layout:fixed; width:800px;'>";
                 echo "<tr><td style='width:100px'>Profile ID</td><td>".$fitbit_profile_entry['id']."</td></tr>";
@@ -681,6 +688,11 @@
                 echo "<tr><td style='width:100px'>Consumer secret</td><td>".$fitbit_profile_entry['consumer_secret']."</td></tr>";
                 echo "<tr><td style='width:100px'>Access token</td><td style='width:450px; word-wrap:break-word;'>".$fitbit_profile_entry['access_token']."</td></tr>";
                 echo "<tr><td style='width:100px'>Refresh token</td><td style='width:450px; word-wrap:break-word;' >".$fitbit_profile_entry['refresh_token']."</td></tr>";
+                echo "<tr><td style='width:100px'>Expires in</td><td style='width:450px; word-wrap:break-word;' >".$fitbit_profile_entry['expires_in']."</td></tr>";
+                echo "<tr><td style='width:100px'>Scope</td><td style='width:450px; word-wrap:break-word;' >".$fitbit_profile_entry['scope']."</td></tr>";
+                echo "<tr><td style='width:100px'>Token type</td><td style='width:450px; word-wrap:break-word;' >".$fitbit_profile_entry['token_type']."</td></tr>";
+                echo "<tr><td style='width:100px'>Fitbit user id</td><td style='width:450px; word-wrap:break-word;' >".$fitbit_profile_entry['fitbit_user_id']."</td></tr>";
+                
                 echo "<tr><td style='width:100px'>Last call time</td><td>".$last_fitbit_call_time."</td></tr>";
                 echo "<tr><td style='width:100px'>Next call time</td><td>".$next_fitbit_call_time."</td></tr>";
                 echo "</table>";
@@ -862,8 +874,8 @@
             <option value="America/Halifax"> America/Halifax-ADT, Seattle+4</option>
         </select><br />
         <a href="http://www.timeanddate.com/time/map/" target="_blank">Check timezone map</a><br />
-        FITBIT OAuth 2.0 Client ID: <input id="user_fitbit_id" type="text" name="fitbit_id"><br />
-        FITBIT Client Secret: <input id="user_fitbit_secret" type="text" name="fitbit_secret"><br />
+        <!--FITBIT OAuth 2.0 Client ID: <input id="user_fitbit_id" type="text" name="fitbit_id"><br />
+        FITBIT Client Secret: <input id="user_fitbit_secret" type="text" name="fitbit_secret"><br />-->
         <button type="button" onclick="return addUser();">Add user</button>
     </div>
     <br />
@@ -899,6 +911,8 @@
             echo "<th>Log id</th>";
             echo "<th>Body</th>";
             echo "<th>Intent</th>";
+            echo "<th>Score</th>";
+            echo "<th>Raw intent</th>";
             echo "</tr>";//->getIterator(0,50,array("To" => $user['number']))
             foreach ($responses as $rsp_no => $rsp_values) {
                 echo "<tr>";
@@ -906,6 +920,8 @@
                 echo "<td>".$rsp_values['log_id']."</td>";
                 echo "<td>".$rsp_values['text']."</td>";
                 echo "<td>".$rsp_values['intent']."</td>";
+                echo "<td>".$rsp_values['score']."</td>";
+                echo "<td>".$rsp_values['intent_raw']."</td>";
                 echo "</tr>";
             }
             echo "<table>";
@@ -923,6 +939,44 @@
      
         // Loop over the list of messages and echo a property for each one
         if ($userID != NULL) {
+            $exchanges = [];
+
+        
+            // Messages sent by the user
+            foreach ($client->account->messages->stream($options = array('From' => $user_number, 'dateSentAfter' => "2017-05-09"), $limit = 50) as $msg) { #0,50, array('To' => '+12068760738'))  as $msg) {#->read(array("To" => "+12068760738")) as $msg) {
+                 
+                 $timestamp = date_format($msg->dateSent,"Y-m-d H:i:s");
+                 $mediaUrl = "";
+                 if(isset($msg->mediaUrl)) {
+                    $mediaUrl = $msg->mediaUrl;
+                 }
+                 $exchange = [  "date" => $timestamp, 
+                                "source" => "user", 
+                                "from" => $msg->from, 
+                                "to" => $msg->to, 
+                                "body" => $msg->body,
+                                "mediaUrl" => $mediaUrl];
+
+                 $exchanges[] = $exchange;
+            }
+            // Messages sent to the user
+            foreach ($client->account->messages->stream($options = array('To' => $user_number, 'dateSentAfter' => "2017-05-09"), $limit = 50) as $msg) { #0,50, array('To' => '+12068760738'))  as $msg) {#->read(array("To" => "+12068760738")) as $msg) {
+                 
+                 $timestamp = date_format($msg->dateSent,"Y-m-d H:i:s");
+                 $mediaUrl = "";
+                 if(isset($msg->mediaUrl)) {
+                    $mediaUrl = $msg->mediaUrl;
+                 }
+                 $exchange = [  "date" => $timestamp, 
+                                "source" => "system", 
+                                "from" => $msg->from, 
+                                "to" => $msg->to, 
+                                "body" => $msg->body,
+                                "mediaUrl" => $mediaUrl];
+                 
+                 $exchanges[] = $exchange;
+            }
+
             echo "NR:".$user_number."<br />";
             echo "<table border=1>";
             echo "<tr>";
@@ -931,11 +985,38 @@
             echo "<th>From</th>";
             echo "<th>To</th>";
             echo "<th>Body</th>";
+            echo "<th>MediaUrl</th>";
             echo "</tr>";
             
             $i=0;
-            // Messages sent to the user
-            foreach ($client->account->messages->stream($options = array('To' => $user_number, 'dateSentAfter' => "2017-04-25"), $limit = 50) as $msg) { #0,50, array('To' => '+12068760738'))  as $msg) {#->read(array("To" => "+12068760738")) as $msg) {
+            $user_timezone = getUserTimezone($userID);
+            rsort($exchanges);
+            foreach ($exchanges as $key => $val) {
+                #date in GMT
+                date_default_timezone_set("Atlantic/Azores");
+                $ts = strtotime($val['date']);
+                #date in local
+                date_default_timezone_set($user_timezone);
+                $date_str = date("Y-m-d H:i:s", $ts);
+
+                $style = "";
+                if ($val['source'] == "user") {
+                    $style = "style='background-color:#eeeeee'";
+                }
+
+                echo "<tr>";
+                echo "<td ".$style.">" . $i . "</td>";
+                echo "<td ".$style.">" . $date_str. "</td>";
+                echo "<td ".$style.">" . $val['from'] . "</td>";
+                echo "<td ".$style.">" . $val['to'] . "</td>";
+                echo "<td ".$style.">" . $val['body'] . "</td>";
+                echo "<td ".$style.">" . $val['mediaUrl'] . "</td>";
+                echo "</tr>";
+                
+                $i = $i + 1;
+            }
+
+            /*foreach ($client->account->messages->stream($options = array('To' => $user_number, 'dateSentAfter' => "2017-04-25"), $limit = 50) as $msg) { #0,50, array('To' => '+12068760738'))  as $msg) {#->read(array("To" => "+12068760738")) as $msg) {
                  echo "<tr>";
                  echo "<td>".$i."</td>";
                  echo "<td>".date_format($msg->dateSent,"Y-m-d H:i:s")."</td>";
@@ -955,7 +1036,7 @@
                  echo "<td style='background-color:#eeeeee'>".$msg->body."</td>";
                  echo "</tr>";
                  $i = $i + 1;
-            }
+            }*/
 
             echo "<table>";
         }
