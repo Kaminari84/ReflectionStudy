@@ -5,48 +5,31 @@ include_once("dbManager.php");
 logDebug("----MESSAGE MANAGER LOAD----");
 logDebug("USER IP:".$_SERVER['REMOTE_ADDR']);
 
-/*$messages = [ 
-	["text" => "How many days did you meet your goal?", "cat" => "NOTICE", "sub_cat" => "GAC", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "Did you meet your goal?", "cat" => "NOTICE", "sub_cat" => "GAC", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "Which day did you perform well and move closer to your goal?", "cat" => "NOTICE", "sub_cat" => "GAC", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "Which day were you most active?", "cat" => "NOTICE", "sub_cat" => "PAA", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "Is there a weekly pattern?", "cat" => "NOTICE", "sub_cat" => "PAA", "scope" => "2WEEKS", "source" => "STEPS"],
-
-	["text" => "What was unique and how can you repeat it?", "cat" => "UNDERSTAND", "sub_cat" => "CTX", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "What happened and how can you avoid the same?", "cat" => "UNDERSTAND", "sub_cat" => "CTX", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "What did you do out of the ordinary on days that are outliers in the data?", "cat" => "UNDERSTAND", "sub_cat" => "CTX", "scope" => "WEEK", "source" => "STEPS"],
-	["text" => "Why were some days better or worse than others?", "cat" => "UNDERSTAND", "sub_cat" => "CTX", "scope" => "WEEK", "source" => "STEPS"],
-
-	["text" => "How can you be consistent in achieving the goal?", "cat" => "FUTURE", "sub_cat" => "FI", "scope" => "WEEK", "source" => "NONE"],
-	["text" => "What measures can you take to hit your goal every day?", "cat" => "FUTURE", "sub_cat" => "FI", "scope" => "WEEK", "source" => "NONE"],
-	["text" => "What small changes (daily repeatable) can you make today?", "cat" => "FUTURE", "sub_cat" => "FI", "scope" => "WEEK", "source" => "NONE"],
-	["text" => "How can you be more active?", "cat" => "FUTURE", "sub_cat" => "FI", "scope" => "WEEK", "source" => "NONE"],
-	["text" => "Is your goal too low?", "cat" => "FUTURE", "sub_cat" => "GR", "scope" => "WEEK", "source" => "NONE"],
-];*/
+$luis_subscription_key = "SUBSCRIPTION_KEY"
 
 $test_messages = [ 
-	["id" => 1, "text" => "How many days did you meet that goal?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily"], "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/019f89a7-f3bd-4d4f-8bd3-2d6cc464714b?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
+	["id" => 1, "text" => "How many days did you meet that goal?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily"], "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/019f89a7-f3bd-4d4f-8bd3-2d6cc464714b?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q="],
 	["id" => 2, "text" => "Have you made progress towards that goal?", 					"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["long_term"] ],
 	["id" => 3, "text" => "Which day(s) were you most physically active?", 				"scope" => "WEEK", "source" => "STEPS", "subject" => "activity"],
 	["id" => 4, "text" => "Which day(s) were you least active?", 						"scope" => "WEEK", "source" => "STEPS", "subject" => "activity"],
-	["id" => 5, "text" => "Can you spot any weekly patterns in your data?", 			"scope" => "2WEEKS", "source" => "STEPS", "subject" => "pattern", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/8501ae69-54dd-4cd8-909b-ef46bd5d9758?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
-	["id" => 6, "text" => "Do you remember to wear your fitbit every day?", 			"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/f6524bd8-0c1e-4269-9097-03c683ecec2f?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
+	["id" => 5, "text" => "Can you spot any weekly patterns in your data?", 			"scope" => "2WEEKS", "source" => "STEPS", "subject" => "pattern", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/8501ae69-54dd-4cd8-909b-ef46bd5d9758?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q="],
+	["id" => 6, "text" => "Do you remember to wear your fitbit every day?", 			"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/f6524bd8-0c1e-4269-9097-03c683ecec2f?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q="],
 	["id" => 7, "text" => "How many steps total have you taken last week?", 			"scope" => "WEEK", "source" => "STEPS", "subject" => "achievement"],
 
 	["id" => 8, "text" => "Why is physical activity important for you?", 								"scope" => "NONE", "source" => "NONE", "subject" => "activity"],
 	["id" => 9, "text" => "What changes have you made to improve your level of physical activity?", 	"scope" => "2WEEKS", "source" => "STEPS", "subject" => "activity"],
 	["id" => 10, "text" => "Is the amount of calories burned directly connected to your steps?", 			"scope" => "WEEK", "source" => "STEPS", "subject" => "tracking"],
 	["id" => 11, "text" => "What helped you during the week to make progress towards that goal?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["weekly","long_term"] ],
-	["id" => 12, "text" => "What are some of the ways that your work has impacted your physical activity this week?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/937718a3-fdc4-4447-a530-25a17c7bd068?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
+	["id" => 12, "text" => "What are some of the ways that your work has impacted your physical activity this week?", 		"scope" => "WEEK", "source" => "STEPS", "subject" => "activity", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/937718a3-fdc4-4447-a530-25a17c7bd068?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q="],
 	["id" => 13, "text" => "Is fitbit tracking your data accurately? Why or why not?", 					"scope" => "WEEK", "source" => "STEPS", "subject" => "tracking"],
 	["id" => 14, "text" => "Is this goal easy/difficult to achieve for you?", 							"scope" => "WEEK", "source" => "STEPS", "subject" => "goal", "goal_scope" => ["daily","weekly"] ],
 
 	["id" => 15, "text" => "What is the next step for reaching that goal?", 				"scope" => "NONE", "source" => "NONE", "subject" => "goal", "goal_scope" => ["long_term"] ],
-	["id" => 16, "text" => "Do your friends exercise more than you do?", 					"scope" => "NONE", "source" => "NONE", "subject" => "social", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/2767ae60-5e0f-44f3-9295-372a8e684eb6?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q=" ],
-	["id" => 17, "text" => "Do you think you can be more active?", 							"scope" => "WEEK", "source" => "STEPS", "subject" => "achievement", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/63397085-3639-4db6-a9ce-c8921596713a?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q=" ],
+	["id" => 16, "text" => "Do your friends exercise more than you do?", 					"scope" => "NONE", "source" => "NONE", "subject" => "social", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/2767ae60-5e0f-44f3-9295-372a8e684eb6?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q=" ],
+	["id" => 17, "text" => "Do you think you can be more active?", 							"scope" => "WEEK", "source" => "STEPS", "subject" => "achievement", "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/63397085-3639-4db6-a9ce-c8921596713a?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q=" ],
 	["id" => 18, "text" => "What kinds of activities would help you burn more calories?", 	"scope" => "NONE", "source" => "NONE", "subject" => "activity"],
-	["id" => 19, "text" => "Is there anything happening next week that could reduce your level of physical activity?", 	"scope" => "NONE", "source" => "NONE", "subject" => "activity",  "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/4cb588e9-f7e2-47ea-9fbf-1c10e0f9cd3f?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&q="],
-	["id" => 20, "text" => "Is there anything else that you would like to track besides what Fitbit already tracks?", 	"scope" => "NONE", "source" => "NONE", "subject" => "activity",  "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/abb42dd7-d7ac-4962-a0ba-ef4a1ede8bc7?subscription-key=***REMOVED***&verbose=true&timezoneOffset=0&spellCheck=true&q="]
+	["id" => 19, "text" => "Is there anything happening next week that could reduce your level of physical activity?", 	"scope" => "NONE", "source" => "NONE", "subject" => "activity",  "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/4cb588e9-f7e2-47ea-9fbf-1c10e0f9cd3f?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&q="],
+	["id" => 20, "text" => "Is there anything else that you would like to track besides what Fitbit already tracks?", 	"scope" => "NONE", "source" => "NONE", "subject" => "activity",  "luis_url" => "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/abb42dd7-d7ac-4962-a0ba-ef4a1ede8bc7?subscription-key=".$luis_subscription_key."&verbose=true&timezoneOffset=0&spellCheck=true&q="]
 ];
 
 $test_followup_messages = [
