@@ -7,8 +7,8 @@
     use Twilio\Rest\Client;
 
     // Your Account SID and Auth Token from twilio.com/console
-    $sid = '***REMOVED***';
-    $token = '***REMOVED***';
+    $sid = $_GET['twillio_ssid'];
+    $token = $_GET['twillio_auth_token'];
     $client = new Client($sid, $token); 
 
     include_once("Managers/dbManager.php");
