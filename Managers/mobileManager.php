@@ -10,9 +10,9 @@ use Twilio\Rest\Client;
 include_once("errorReporting.php");
 
 // Your Account SID and Auth Token from twilio.com/console
-$sid = ***REMOVED***;
-$token = ***REMOVED***;
-$service_number = "***REMOVED***";
+$sid = $_GET['twillio_ssid']';
+$token = $_GET['twillio_token'];
+$service_number = $_GET['service_number'];
 $client = new Client($sid, $token);
 
 function sendSMS($number, $message) {
