@@ -12,14 +12,11 @@ include_once("Managers/fitbit_exchangeLogger.php");
 
 connectToDB();
 
-//$FITBIT_ID = "***REMOVED***";
-//$CONSUMER_SECRET = "***REMOVED***";
-
 $code = isset($_GET['code']) ? $_GET['code'] : NULL;
 $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : NULL;
 #$fitbit_profile_id = NULL;
-$fitbit_id = "***REMOVED***";
-$fitbit_secret = "***REMOVED***";
+$fitbit_id = $_GET['fitbit_id'];
+$fitbit_secret = $_GET['fitbut_secret'];
 
 session_start();
 
@@ -32,17 +29,6 @@ if (!$user_id) {
 	logDebug("There is user id from GET, saving to session!");
 	$_SESSION['user_id'] = $user_id;
 }
-
-/*if ($user_id) {
-	logDebug("Go user ID somehow, retrieving the rest...");
-	#$fitbit_profile_id = getUserFitbitProfileID($user_id);
-	$fitbit_id = "***REMOVED***"; #getFitbitID($fitbit_profile_id);
-	$fitbit_secret = "***REMOVED***"; #getFitbitSecret($fitbit_profile_id);
-	logDebug("User ID:".$user_id);
-	#logDebug("Fitbit profile ID:".$fitbit_profile_id);
-	logDebug("Fitbit ID:".$fitbit_id);
-	logDebug("Fitbit secret:".$fitbit_secret);
-}*/
 
 if ($code) {
 	logDebug("Got code:".$code);

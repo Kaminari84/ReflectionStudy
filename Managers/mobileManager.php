@@ -10,8 +10,8 @@ use Twilio\Rest\Client;
 include_once("errorReporting.php");
 
 // Your Account SID and Auth Token from twilio.com/console
-$sid = '***REMOVED***';
-$token = '***REMOVED***';
+$sid = ***REMOVED***;
+$token = ***REMOVED***;
 $service_number = "***REMOVED***";
 $client = new Client($sid, $token);
 
