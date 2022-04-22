@@ -5,9 +5,9 @@ include_once("errorReporting.php");
 logDebug("----DB MANAGER LOAD----");
 
 $server = "127.0.0.1";
-$username = "***REMOVED***";
-$password = "***REMOVED***";
-$database = "***REMOVED***";
+$username = "DB_USER";
+$password = "DB_PASS";
+$database = "DB_NAME";
 
 $conn = null;
 
